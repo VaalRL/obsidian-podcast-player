@@ -11,3 +11,4 @@ export { PlaylistQueueView, PLAYLIST_QUEUE_VIEW_TYPE } from './PlaylistQueueView
 export { AddToQueueModal } from './AddToQueueModal';
 export { AddToPlaylistModal } from './AddToPlaylistModal';
 export { SubscribePodcastModal } from './SubscribePodcastModal';
+export { PodcastSettingsModal } from './PodcastSettingsModal';

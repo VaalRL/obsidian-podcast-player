@@ -13,6 +13,7 @@ import { Podcast, Episode } from '../model';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
 import { SubscribePodcastModal } from './SubscribePodcastModal';
+import { PodcastSettingsModal } from './PodcastSettingsModal';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 
@@ -332,9 +333,29 @@ export class PodcastSidebarView extends ItemView {
 	 * Handle podcast settings button click
 	 */
 	private handlePodcastSettings(): void {
-		// Placeholder - will show podcast-specific settings
-		console.log('Podcast settings clicked');
-		// TODO: Show modal for podcast settings
+		if (!this.selectedPodcast) return;
+
+		new PodcastSettingsModal(
+			this.app,
+			this.plugin,
+			this.selectedPodcast,
+			async (settings) => {
+				// Save the settings to the podcast
+				try {
+					const subscriptionStore = this.plugin.getSubscriptionStore();
+					this.selectedPodcast!.settings = settings;
+					await subscriptionStore.updatePodcast(this.selectedPodcast!);
+
+					new Notice('Podcast settings updated');
+
+					// Refresh the view
+					await this.render();
+				} catch (error) {
+					console.error('Failed to save podcast settings:', error);
+					new Notice('Failed to save settings');
+				}
+			}
+		).open();
 	}
 
 	/**
