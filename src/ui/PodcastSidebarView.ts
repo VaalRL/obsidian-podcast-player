@@ -470,9 +470,38 @@ export class PodcastSidebarView extends ItemView {
 	 */
 	private async handleExportToNote(episode: Episode): Promise<void> {
 		try {
-			// This would use NoteExporter, but for now just show a notice
-			new Notice('Export to note - Coming soon!');
-			// TODO: Implement NoteExporter integration
+			// Show loading notification
+			const loadingNotice = new Notice('Exporting episode to note...', 0);
+
+			// Get the podcast information
+			const subscriptionStore = this.plugin.getSubscriptionStore();
+			const podcast = await subscriptionStore.getPodcast(episode.podcastId);
+
+			if (!podcast) {
+				loadingNotice.hide();
+				new Notice('Failed to find podcast information');
+				return;
+			}
+
+			// Get progress information (if available)
+			const episodeManager = this.plugin.getEpisodeManager();
+			const episodeWithProgress = await episodeManager.getEpisodeWithProgress(episode.id);
+			const progress = episodeWithProgress?.progress;
+
+			// Export the episode
+			const noteExporter = this.plugin.getNoteExporter();
+			const noteFile = await noteExporter.exportEpisode(episode, podcast, progress);
+
+			// Hide loading notification
+			loadingNotice.hide();
+
+			// Show success notification
+			new Notice(`Note created: ${noteFile.name}`);
+
+			// Open the note (optional)
+			const leaf = this.app.workspace.getLeaf(false);
+			await leaf.openFile(noteFile);
+
 		} catch (error) {
 			console.error('Failed to export to note:', error);
 			new Notice('Failed to export to note');

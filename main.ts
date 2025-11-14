@@ -23,6 +23,7 @@ import { QueueStore, QueueManager } from './src/queue';
 import { FeedService, FeedSyncManager } from './src/feed';
 import { PodcastService, EpisodeManager } from './src/podcast';
 import { PlaybackEngine, ProgressTracker, PlayerController } from './src/player';
+import { NoteExporter } from './src/markdown';
 import { logger } from './src/utils/Logger';
 
 /**
@@ -63,6 +64,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 	private playbackEngine: PlaybackEngine;
 	private progressTracker: ProgressTracker;
 	playerController: PlayerController; // Public for UI access
+
+	// Markdown layer
+	private noteExporter: NoteExporter;
 
 	/**
 	 * Plugin lifecycle: Called when the plugin is loaded
@@ -110,6 +114,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 		this.playbackEngine = new PlaybackEngine();
 		this.progressTracker = new ProgressTracker(this.progressStore);
 		this.playerController = new PlayerController(this.playbackEngine, this.progressTracker);
+
+		// Initialize markdown layer
+		this.noteExporter = new NoteExporter(this.app.vault);
 
 		// Register view types
 		this.registerView(
@@ -368,6 +375,13 @@ export default class PodcastPlayerPlugin extends Plugin {
 	 */
 	getFeedSyncManager(): FeedSyncManager {
 		return this.feedSyncManager;
+	}
+
+	/**
+	 * Get the note exporter (for UI components)
+	 */
+	getNoteExporter(): NoteExporter {
+		return this.noteExporter;
 	}
 
 	/**
