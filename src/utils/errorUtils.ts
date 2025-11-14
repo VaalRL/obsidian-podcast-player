@@ -19,14 +19,14 @@ export class PodcastPlayerError extends Error {
 }
 
 export class FeedParseError extends PodcastPlayerError {
-	constructor(message: string, public readonly feedUrl: string) {
+	constructor(message: string, public readonly feedUrl: string, public readonly cause?: Error | unknown) {
 		super(message, 'FEED_PARSE_ERROR');
 		this.name = 'FeedParseError';
 	}
 }
 
 export class NetworkError extends PodcastPlayerError {
-	constructor(message: string, public readonly url: string) {
+	constructor(message: string, public readonly url: string, public readonly cause?: Error | unknown) {
 		super(message, 'NETWORK_ERROR');
 		this.name = 'NetworkError';
 	}
