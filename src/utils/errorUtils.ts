@@ -33,7 +33,7 @@ export class NetworkError extends PodcastPlayerError {
 }
 
 export class AudioPlaybackError extends PodcastPlayerError {
-	constructor(message: string, public readonly audioUrl?: string) {
+	constructor(message: string, public readonly audioUrl?: string, public readonly cause?: Error | unknown) {
 		super(message, 'AUDIO_PLAYBACK_ERROR');
 		this.name = 'AudioPlaybackError';
 	}
