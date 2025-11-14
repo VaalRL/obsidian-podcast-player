@@ -10,6 +10,8 @@
 import { ItemView, WorkspaceLeaf, Menu, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Podcast, Episode } from '../model';
+import { AddToQueueModal } from './AddToQueueModal';
+import { AddToPlaylistModal } from './AddToPlaylistModal';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 
@@ -412,8 +414,15 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('Add to Queue')
 				.setIcon('list-plus')
 				.onClick(() => {
-					console.log('Add to queue:', episode.title);
-					// TODO: Add to queue
+					new AddToQueueModal(
+						this.app,
+						this.plugin,
+						[episode],
+						(queueId) => {
+							// Callback after adding to queue
+							console.log(`Added episode to queue: ${queueId}`);
+						}
+					).open();
 				})
 		);
 
@@ -422,8 +431,15 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('Add to Playlist')
 				.setIcon('folder-plus')
 				.onClick(() => {
-					console.log('Add to playlist:', episode.title);
-					// TODO: Show playlist selection
+					new AddToPlaylistModal(
+						this.app,
+						this.plugin,
+						[episode],
+						(playlistId) => {
+							// Callback after adding to playlist
+							console.log(`Added episode to playlist: ${playlistId}`);
+						}
+					).open();
 				})
 		);
 
@@ -434,12 +450,25 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('Export to Note')
 				.setIcon('file-text')
 				.onClick(() => {
-					console.log('Export to note:', episode.title);
-					// TODO: Export episode to markdown note
+					this.handleExportToNote(episode);
 				})
 		);
 
 		menu.showAtMouseEvent(event);
+	}
+
+	/**
+	 * Handle export to note
+	 */
+	private async handleExportToNote(episode: Episode): Promise<void> {
+		try {
+			// This would use NoteExporter, but for now just show a notice
+			new Notice('Export to note - Coming soon!');
+			// TODO: Implement NoteExporter integration
+		} catch (error) {
+			console.error('Failed to export to note:', error);
+			new Notice('Failed to export to note');
+		}
 	}
 
 	/**

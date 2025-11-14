@@ -7,3 +7,5 @@
 export { PodcastPlayerSettingTab } from './SettingsTab';
 export { PlayerView, PLAYER_VIEW_TYPE } from './PlayerView';
 export { PodcastSidebarView, PODCAST_SIDEBAR_VIEW_TYPE } from './PodcastSidebarView';
+export { AddToQueueModal } from './AddToQueueModal';
+export { AddToPlaylistModal } from './AddToPlaylistModal';

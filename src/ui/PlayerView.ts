@@ -18,6 +18,7 @@ export class PlayerView extends ItemView {
 	plugin: PodcastPlayerPlugin;
 	private playerContentEl: HTMLElement;
 	private updateInterval: number | null = null;
+	private currentQueueId: string | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -234,17 +235,63 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle previous episode button click
 	 */
-	private handlePrevious(): void {
-		// Placeholder - will integrate with QueueManager
-		console.log('Previous episode clicked');
+	private async handlePrevious(): Promise<void> {
+		try {
+			if (!this.currentQueueId) {
+				console.log('No queue selected');
+				return;
+			}
+
+			const queueManager = this.plugin.getQueueManager();
+			const previousEpisodeId = await queueManager.previous(this.currentQueueId);
+
+			if (previousEpisodeId) {
+				// Load the episode from subscription store
+				await this.loadEpisodeById(previousEpisodeId);
+			}
+		} catch (error) {
+			console.error('Failed to go to previous episode:', error);
+		}
 	}
 
 	/**
 	 * Handle next episode button click
 	 */
-	private handleNext(): void {
-		// Placeholder - will integrate with QueueManager
-		console.log('Next episode clicked');
+	private async handleNext(): Promise<void> {
+		try {
+			if (!this.currentQueueId) {
+				console.log('No queue selected');
+				return;
+			}
+
+			const queueManager = this.plugin.getQueueManager();
+			const nextEpisodeId = await queueManager.next(this.currentQueueId);
+
+			if (nextEpisodeId) {
+				// Load the episode from subscription store
+				await this.loadEpisodeById(nextEpisodeId);
+			}
+		} catch (error) {
+			console.error('Failed to go to next episode:', error);
+		}
+	}
+
+	/**
+	 * Load episode by ID and start playing
+	 */
+	private async loadEpisodeById(episodeId: string): Promise<void> {
+		try {
+			const episodeManager = this.plugin.getEpisodeManager();
+			const episodeWithProgress = await episodeManager.getEpisodeWithProgress(episodeId);
+
+			if (episodeWithProgress) {
+				const playerController = this.plugin.playerController;
+				// EpisodeWithProgress extends Episode, so we can use it directly
+				await playerController.loadEpisode(episodeWithProgress, true, true);
+			}
+		} catch (error) {
+			console.error('Failed to load episode:', error);
+		}
 	}
 
 	/**
