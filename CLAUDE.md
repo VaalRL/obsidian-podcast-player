@@ -1,6 +1,6 @@
 # CLAUDE.md（任務分配主文件）
 
-> 本文件作為「入口與路由」，依任務情境指派要閱讀的任務指南。適用於 Obsidian Email Client 插件開發。
+> 本文件作為「入口與路由」，依任務情境指派要閱讀的任務指南。適用於 Obsidian Podcast Player 插件開發。
 
 ## 快速路由（你要做什麼？）
 
@@ -30,7 +30,20 @@
 
 ## 專案概況
 
-**Obsidian Email Client** 是一個支援加密（OpenPGP 和 S/MIME）的郵件客戶端插件。
+**Obsidian Podcast Player** 是一個功能豐富的 Podcast 播放與管理插件，參考 Podnote 的基礎功能並提供更精細的管理能力。
+
+### 核心功能
+#### 基礎功能（參考 Podnote）
+- Feed 管理（RSS/Atom）
+- Podcast 播放器
+- Podcast 快速匯入筆記
+
+#### 進階功能（精細管理）
+- 個別 Podcast 播放設定（音量、速度、跳過開頭秒數）
+- 多個播放佇列管理
+- 多個播放清單管理
+- Podcast 訂閱與同步
+- 筆記整合與時間戳記錄
 
 ### 技術堆疊
 - **語言**：TypeScript
@@ -39,12 +52,15 @@
 - **架構**：Obsidian Plugin API
 
 ### 核心模組
-- `src/email/` - 郵件處理核心
-- `src/crypto/` - 加密服務（OpenPGP、S/MIME）
-- `src/markdown/` - Markdown 編輯與渲染
-- `src/model/` - 資料模型定義
-- `src/storage/` - 資料持久化
-- `src/ui/` - 使用者介面
+- `src/podcast/` - Podcast 處理核心（訂閱、下載、解析）
+- `src/player/` - 播放器核心（播放控制、佇列管理）
+- `src/feed/` - Feed 管理（RSS/Atom 解析與同步）
+- `src/playlist/` - 播放清單管理
+- `src/queue/` - 播放佇列管理
+- `src/model/` - 資料模型定義（Podcast、Episode、Playlist 等）
+- `src/storage/` - 資料持久化（訂閱、播放進度、設定）
+- `src/markdown/` - Markdown 整合與筆記匯出
+- `src/ui/` - 使用者介面（播放器、列表、設定）
 - `src/settings.ts` - 設定管理
 - `main.ts` - 插件入口
 

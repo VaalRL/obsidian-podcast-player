@@ -1,6 +1,6 @@
 # 09｜最佳實務摘要（Best Practices）
 
-> 適用於 Obsidian Email Client 插件開發
+> 適用於 Obsidian Podcast Player 插件開發
 
 ## 核心原則
 1. **先想再動手**：分析與計畫先行
@@ -17,20 +17,27 @@
 - **UI 元件**：繼承 `ItemView` 或使用官方 UI 套件
 - **設定管理**：使用 `this.saveSettings()` 保存設定變更
 
-## 加密功能特別注意
-- **OpenPGP**：使用 `openpgp@5.10.0`，注意公私鑰格式
-- **S/MIME**：使用 `node-forge`，處理證書鏈
-- **解密錯誤**：提供清晰的錯誤訊息與回退機制
-- **密鑰儲存**：注意安全性，加密敏感資訊
+## 音訊播放特別注意
+- **播放器狀態**：正確管理播放、暫停、停止狀態
+- **進度追蹤**：精確記錄播放位置，支援斷點續播
+- **錯誤處理**：處理音訊載入失敗、網路中斷等情況
+- **資源清理**：在組件卸載時正確釋放音訊資源
+
+## Feed 解析特別注意
+- **RSS/Atom 支援**：正確解析兩種格式的 Feed
+- **錯誤容錯**：處理格式不正確的 Feed
+- **更新檢測**：有效率地檢測 Feed 更新
+- **快取策略**：合理快取 Feed 資料，減少網路請求
 
 ## Markdown 整合
-- **Front Matter**：使用 YAML Front Matter 儲存郵件元資料
-- **雙向連結**：支援從 Obsidian 筆記連結到郵件
-- **附件處理**：正確處理郵件附件的儲存路徑
+- **Front Matter**：使用 YAML Front Matter 儲存 Podcast 元資料
+- **雙向連結**：支援從 Obsidian 筆記連結到 Episode
+- **時間戳記**：正確格式化並插入播放時間戳
+- **筆記匯出**：提供快速匯出 Episode 資訊的功能
 
 ## 測試策略
-- **單元測試**：核心業務邏輯（加密、解析）
-- **整合測試**：服務層互動（EmailService, ContactStore）
+- **單元測試**：核心業務邏輯（Feed 解析、播放控制）
+- **整合測試**：服務層互動（PodcastService, PlayerController）
 - **避免**：直接測試 Obsidian API（依賴模擬）
 
 ## 常見錯誤與避免

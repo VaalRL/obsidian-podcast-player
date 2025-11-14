@@ -11,39 +11,56 @@
 - `main.ts` - 插件主類別，管理生命週期與註冊功能
 
 ### 功能模組
-- `src/email/` - 郵件處理
-  - `EmailService.ts` - 郵件服務核心
-  - `EmailParser.ts` - 郵件解析器
-  - `EmailSyncManager.ts` - 同步管理
-  - `EmailAdapter.ts` - 適配器抽象
-  - `ProxyEmailAdapter.ts`, `WebSocketEmailAdapter.ts` - 具體實現
-  
-- `src/crypto/` - 加密服務
-  - `OpenPGPService.ts` - OpenPGP 加密
-  - `SMIMEService.ts` - S/MIME 加密
-  
-- `src/markdown/` - Markdown 處理
-  - `EmailMarkdownRenderer.ts` - 郵件渲染器
-  - `ComposeMarkdownModal.ts` - 編輯模態框
-  
+- `src/podcast/` - Podcast 處理核心
+  - `PodcastService.ts` - Podcast 服務核心
+  - `PodcastParser.ts` - Podcast 元數據解析器
+  - `EpisodeManager.ts` - 單集管理
+
+- `src/player/` - 播放器核心
+  - `PlayerController.ts` - 播放器控制器
+  - `PlaybackEngine.ts` - 播放引擎
+  - `ProgressTracker.ts` - 進度追蹤
+
+- `src/feed/` - Feed 管理
+  - `FeedService.ts` - Feed 服務核心
+  - `RSSParser.ts` - RSS 解析器
+  - `AtomParser.ts` - Atom 解析器
+  - `FeedSyncManager.ts` - Feed 同步管理
+
+- `src/playlist/` - 播放清單管理
+  - `PlaylistManager.ts` - 播放清單管理器
+  - `PlaylistStore.ts` - 播放清單儲存
+
+- `src/queue/` - 播放佇列管理
+  - `QueueManager.ts` - 佇列管理器
+  - `QueueStore.ts` - 佇列儲存
+
+- `src/markdown/` - Markdown 整合
+  - `NoteExporter.ts` - 筆記匯出器
+  - `TimestampFormatter.ts` - 時間戳格式化
+
 - `src/model/` - 資料模型
-  - `index.ts` - 核心模型定義
-  
+  - `index.ts` - 核心模型定義（Podcast、Episode、Playlist、Queue）
+
 - `src/storage/` - 資料持久化
-  - `ContactStore.ts` - 聯絡人儲存
+  - `SubscriptionStore.ts` - 訂閱儲存
+  - `ProgressStore.ts` - 播放進度儲存
+  - `SettingsStore.ts` - 設定儲存
   - `LocalCache.ts` - 本地快取
-  
+
 - `src/ui/` - 使用者介面
-  - `EmailListView.ts` - 郵件列表檢視
-  - `EmailDetailView.ts` - 郵件詳情檢視
-  - `ComposeModal.ts` - 撰寫彈窗
+  - `PlayerView.ts` - 播放器檢視
+  - `PodcastListView.ts` - Podcast 列表檢視
+  - `EpisodeListView.ts` - 單集列表檢視
+  - `PlaylistView.ts` - 播放清單檢視
+  - `QueueView.ts` - 佇列檢視
   - `SettingsTab.ts` - 設定頁籤
-  
+
 - `src/utils/` - 工具函數
   - `Logger.ts` - 日誌工具
   - `errorUtils.ts` - 錯誤處理
-  - `contactTools.ts` - 聯絡人工具
-  - `frontMatterTools.ts` - Front Matter 處理
+  - `timeUtils.ts` - 時間處理工具
+  - `audioUtils.ts` - 音訊處理工具
 
 ## 禁止事項
 - 重複檔案／重複邏輯（造成多個 SSOT）
@@ -61,9 +78,11 @@
 ## 快速定位指南
 ```typescript
 // 要找某功能？先搜尋：
-- EmailService - 郵件核心功能
-- OpenPGPService / SMIMEService - 加密功能
+- PodcastService - Podcast 核心功能
+- PlayerController - 播放器控制
+- FeedService - Feed 訂閱與同步
+- PlaylistManager / QueueManager - 播放清單與佇列
 - SettingsManager - 設定存取
-- ContactStore - 聯絡人資料
-- EmailListView / EmailDetailView - UI 組件
+- SubscriptionStore / ProgressStore - 資料儲存
+- PlayerView / PodcastListView - UI 組件
 ```

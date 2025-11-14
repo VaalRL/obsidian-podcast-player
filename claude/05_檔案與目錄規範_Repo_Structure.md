@@ -1,21 +1,25 @@
 # 05｜檔案與目錄規範（Repo Structure）
 
-> 適用於 Obsidian Email Client 插件開發
+> 適用於 Obsidian Podcast Player 插件開發
 
 ## 目錄分工
 
 ### 核心目錄
 - `src/` - TypeScript 實作檔案
-  - `email/` - 郵件處理模組
-  - `crypto/` - 加密服務模組
-  - `markdown/` - Markdown 處理模組
-  - `model/` - 資料模型定義
-  - `storage/` - 資料持久化
+  - `podcast/` - Podcast 處理核心（訂閱、下載、解析）
+  - `player/` - 播放器核心（播放控制、佇列管理）
+  - `feed/` - Feed 管理（RSS/Atom 解析與同步）
+  - `playlist/` - 播放清單管理
+  - `queue/` - 播放佇列管理
+  - `model/` - 資料模型定義（Podcast、Episode、Playlist 等）
+  - `storage/` - 資料持久化（訂閱、播放進度、設定）
+  - `markdown/` - Markdown 整合與筆記匯出
   - `types/` - TypeScript 類型定義
-  - `ui/` - 使用者介面組件
+  - `ui/` - 使用者介面組件（播放器、列表、設定）
   - `utils/` - 工具函數
   - `settings.ts` - 設定管理
-- `claude/` - 開發規範與指南
+- `claude/` - 開發規範與指南（Claude AI 專用）
+- `gemini/` - 開發規範與指南（Gemini AI 專用）
 - `dist/` - 編譯輸出（由 esbuild 產生）
 - `node_modules/` - 依賴套件
 
@@ -38,9 +42,9 @@
 
 ## 檔案命名規範
 - TypeScript 檔案：PascalCase（類別、接口）或 camelCase（函數）
-  - 示例：`EmailService.ts`, `openPGPService.ts`
+  - 示例：`PodcastService.ts`, `feedParser.ts`, `PlayerController.ts`
 - 測試檔案：`原檔名.test.ts`
-  - 示例：`OpenPGPService.test.ts`
+  - 示例：`PodcastService.test.ts`, `PlayerController.test.ts`
 - Markdown 文件：中文描述 + 英文備註
 
 ## 模組組織原則

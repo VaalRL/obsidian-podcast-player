@@ -1,6 +1,6 @@
 # 04｜程式品質與測試（TDD）
 
-> 適用於 Obsidian Email Client 插件開發
+> 適用於 Obsidian Podcast Player 插件開發
 
 ## 指南
 - **先寫測試**：Red → Green → Refactor
@@ -10,29 +10,49 @@
 ## 專案測試策略
 
 ### 單元測試重點
-- `src/crypto/OpenPGPService.ts` - 加密/解密流程
-- `src/crypto/SMIMEService.ts` - S/MIME 處理
-- `src/utils/frontMatterTools.ts` - Front Matter 解析
-- `src/storage/ContactStore.ts` - 資料持久化
+- `src/feed/RSSParser.ts` - RSS Feed 解析
+- `src/feed/AtomParser.ts` - Atom Feed 解析
+- `src/player/PlayerController.ts` - 播放器控制邏輯
+- `src/storage/ProgressStore.ts` - 播放進度儲存
+- `src/playlist/PlaylistManager.ts` - 播放清單管理
+- `src/queue/QueueManager.ts` - 播放佇列管理
 
 ### 測試檔案規範
 - 與源檔案同目錄
 - 命名：`原檔名.test.ts`
-- 示例：`OpenPGPService.test.ts`
+- 示例：`PlayerController.test.ts`, `RSSParser.test.ts`
 
 ### 測試工具函數
 ```typescript
-// 示例：建立測試用的郵件物件
-export function createTestEmail(overrides?: Partial<Email>): Email {
+// 示例：建立測試用的 Podcast 物件
+export function createTestPodcast(overrides?: Partial<Podcast>): Podcast {
   return {
-    uid: 1,
-    from: [{ email: 'test@example.com', name: 'Test' }],
-    to: [{ email: 'test2@example.com' }],
-    subject: 'Test Email',
-    text: 'Test content',
-    html: false,
-    date: new Date(),
-    attachments: [],
+    id: 'test-podcast-1',
+    title: 'Test Podcast',
+    feedUrl: 'https://example.com/feed.rss',
+    author: 'Test Author',
+    description: 'Test Description',
+    imageUrl: 'https://example.com/image.jpg',
+    episodes: [],
+    settings: {
+      volume: 1.0,
+      playbackSpeed: 1.0,
+      skipIntroSeconds: 0
+    },
+    ...overrides
+  };
+}
+
+// 示例：建立測試用的 Episode 物件
+export function createTestEpisode(overrides?: Partial<Episode>): Episode {
+  return {
+    id: 'test-episode-1',
+    podcastId: 'test-podcast-1',
+    title: 'Test Episode',
+    audioUrl: 'https://example.com/audio.mp3',
+    duration: 3600,
+    publishDate: new Date(),
+    description: 'Test episode description',
     ...overrides
   };
 }

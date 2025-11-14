@@ -1,6 +1,6 @@
 # 06｜工具使用與限制（Tooling）
 
-> 適用於 Obsidian Email Client 插件開發
+> 適用於 Obsidian Podcast Player 插件開發
 
 ## 禁用與替代
 - 禁用：`git -i`、`find`、`grep`、`cat`、`head`、`tail`、`ls`
@@ -20,9 +20,9 @@ npm test         # 執行測試
 - 使用 `esbuild` 而非 `tsc` 直接構建（見 `esbuild.config.mjs`）
 
 ### 依賴管理
-- `dependencies`：
-  - `node-forge` (^1.3.1) - S/MIME 加密
-  - `openpgp` (^5.10.0) - OpenPGP 加密
+- `dependencies`（預計需要）：
+  - `rss-parser` - RSS/Atom Feed 解析
+  - `howler` 或原生 Audio API - 音訊播放
 - `devDependencies`：
   - `esbuild` - 構建工具
   - `jest` - 測試框架
