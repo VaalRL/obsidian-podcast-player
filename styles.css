@@ -1,0 +1,155 @@
+/*
+ * Podcast Player Plugin Styles
+ *
+ * Base styles for the Podcast Player plugin
+ * Follows Obsidian's design system for consistency
+ */
+
+/* ==========================================================================
+   Player Container
+   ========================================================================== */
+
+.podcast-player-container {
+	padding: var(--size-4-4);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+/* ==========================================================================
+   Podcast List
+   ========================================================================== */
+
+.podcast-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+
+.podcast-list-item {
+	display: flex;
+	align-items: center;
+	padding: var(--size-4-3);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.podcast-list-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.podcast-list-item.is-active {
+	background-color: var(--background-modifier-active-hover);
+}
+
+/* ==========================================================================
+   Episode List
+   ========================================================================== */
+
+.episode-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+}
+
+.episode-list-item {
+	padding: var(--size-4-2);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.episode-list-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* ==========================================================================
+   Playback Controls
+   ========================================================================== */
+
+.playback-controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-3);
+	padding: var(--size-4-4);
+}
+
+.playback-button {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.playback-button:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.playback-button.primary {
+	width: 56px;
+	height: 56px;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.playback-button.primary:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+/* ==========================================================================
+   Progress Bar
+   ========================================================================== */
+
+.progress-bar-container {
+	width: 100%;
+	height: 6px;
+	background-color: var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	position: relative;
+}
+
+.progress-bar {
+	height: 100%;
+	background-color: var(--interactive-accent);
+	border-radius: var(--radius-s);
+	transition: width 0.1s linear;
+}
+
+.progress-bar-thumb {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 12px;
+	height: 12px;
+	background-color: var(--interactive-accent);
+	border-radius: 50%;
+	cursor: grab;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.progress-bar-container:hover .progress-bar-thumb {
+	opacity: 1;
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.hidden {
+	display: none !important;
+}
+
+.text-muted {
+	color: var(--text-muted);
+}
+
+.text-small {
+	font-size: var(--font-ui-smaller);
+}
