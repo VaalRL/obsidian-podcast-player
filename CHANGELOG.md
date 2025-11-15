@@ -18,16 +18,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - PlayerController (37 tests) - Player control, episode loading, playback, seeking
   - ProgressTracker (40 tests) - Progress tracking, periodic save, resume, completion
   - PlaybackEngine (46 tests) - Audio playback, controls, event handling, lifecycle
+  - audioUtils (46 tests) - Audio utility functions, validation, formatting
+  - timeUtils (30 tests) - Time formatting, parsing, relative time
 - Jest testing infrastructure with Obsidian API mocks
-- Test coverage reporting (225 tests passing)
-  - ProgressTracker: 95% coverage
-  - PlaylistManager: 95% coverage
-  - PlaybackEngine: 92% coverage ⭐ NEW
-  - PlayerController: 85% coverage
-  - ProgressStore: 84% coverage
-  - QueueManager: 57% coverage
+- Test coverage reporting (301 tests passing)
+  - **Utility modules: 76% overall coverage**
+    - audioUtils: 100% coverage 🎯
+    - timeUtils: 100% coverage 🎯
+  - **Player module: 90% coverage** 🎉
+    - ProgressTracker: 95% coverage
+    - PlaybackEngine: 92% coverage
+    - PlayerController: 85% coverage
+  - **Storage module: 84% coverage**
+    - ProgressStore: 84% coverage
+  - **Playlist/Queue modules:**
+    - PlaylistManager: 95% coverage
+    - QueueManager: 57% coverage
   - SettingsStore: 52% coverage
-  - Player module overall: 90% coverage 🎉
 
 ## [0.1.0] - 2025-11-15
 
