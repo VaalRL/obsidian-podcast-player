@@ -12,3 +12,4 @@ export { AddToQueueModal } from './AddToQueueModal';
 export { AddToPlaylistModal } from './AddToPlaylistModal';
 export { SubscribePodcastModal } from './SubscribePodcastModal';
 export { PodcastSettingsModal } from './PodcastSettingsModal';
+export { EpisodeDetailModal } from './EpisodeDetailModal';

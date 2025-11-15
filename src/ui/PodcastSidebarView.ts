@@ -14,6 +14,7 @@ import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
 import { SubscribePodcastModal } from './SubscribePodcastModal';
 import { PodcastSettingsModal } from './PodcastSettingsModal';
+import { EpisodeDetailModal } from './EpisodeDetailModal';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 
@@ -379,9 +380,7 @@ export class PodcastSidebarView extends ItemView {
 	 * Handle episode item click (show details)
 	 */
 	private handleEpisodeClick(episode: Episode): void {
-		// Placeholder - will show episode details/description
-		console.log('Episode clicked:', episode.title);
-		// TODO: Show episode details modal or expand inline
+		new EpisodeDetailModal(this.app, this.plugin, episode).open();
 	}
 
 	/**
@@ -430,6 +429,15 @@ export class PodcastSidebarView extends ItemView {
 	 */
 	private showEpisodeContextMenu(episode: Episode, event: MouseEvent): void {
 		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('View Details')
+				.setIcon('info')
+				.onClick(() => this.handleEpisodeClick(episode))
+		);
+
+		menu.addSeparator();
 
 		menu.addItem((item) =>
 			item

@@ -9,6 +9,7 @@
 import { ItemView, WorkspaceLeaf, Menu, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Playlist, Queue, Episode } from '../model';
+import { EpisodeDetailModal } from './EpisodeDetailModal';
 
 export const PLAYLIST_QUEUE_VIEW_TYPE = 'playlist-queue-view';
 
@@ -414,6 +415,11 @@ export class PlaylistQueueView extends ItemView {
 			this.handlePlayEpisode(episode);
 		});
 
+		// Click to show episode details
+		item.addEventListener('click', () => {
+			new EpisodeDetailModal(this.app, this.plugin, episode).open();
+		});
+
 		// Context menu
 		item.addEventListener('contextmenu', (e) => {
 			e.preventDefault();
@@ -562,6 +568,17 @@ export class PlaylistQueueView extends ItemView {
 	 */
 	private showEpisodeContextMenu(episode: Episode, index: number, type: 'playlist' | 'queue', event: MouseEvent): void {
 		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('View Details')
+				.setIcon('info')
+				.onClick(() => {
+					new EpisodeDetailModal(this.app, this.plugin, episode).open();
+				})
+		);
+
+		menu.addSeparator();
 
 		menu.addItem((item) =>
 			item
