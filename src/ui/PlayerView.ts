@@ -7,7 +7,8 @@
 
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { PlaybackState } from '../model';
+import { PlaybackState, Queue, Episode } from '../model';
+import type { EpisodeWithProgress } from '../podcast';
 
 export const PLAYER_VIEW_TYPE = 'podcast-player-view';
 
@@ -56,7 +57,7 @@ export class PlayerView extends ItemView {
 
 		this.playerContentEl = container.createDiv({ cls: 'podcast-player-content' });
 
-		this.renderPlayer();
+		await this.renderPlayer();
 
 		// Start periodic UI updates
 		this.startUpdateInterval();
@@ -72,7 +73,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Render the player UI
 	 */
-	private renderPlayer(): void {
+	private async renderPlayer(): Promise<void> {
 		this.playerContentEl.empty();
 
 		// Player container
@@ -89,6 +90,9 @@ export class PlayerView extends ItemView {
 
 		// Advanced controls section
 		this.renderAdvancedControls(playerContainer);
+
+		// Queue section
+		await this.renderQueueSection(playerContainer);
 	}
 
 	/**
@@ -472,6 +476,242 @@ export class PlayerView extends ItemView {
 			return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 		} else {
 			return `${minutes}:${secs.toString().padStart(2, '0')}`;
+		}
+	}
+
+	/**
+	 * Render current queue section
+	 */
+	private async renderQueueSection(container: HTMLElement): Promise<void> {
+		const queueSection = container.createDiv({ cls: 'queue-section' });
+
+		// Section header
+		const header = queueSection.createDiv({ cls: 'queue-header' });
+		header.createEl('h3', { text: 'Current Queue', cls: 'queue-title' });
+
+		try {
+			// Get current queue
+			const queue = await this.getCurrentQueue();
+
+			if (!queue || queue.episodeIds.length === 0) {
+				const emptyState = queueSection.createDiv({ cls: 'queue-empty-state' });
+				emptyState.createEl('p', { text: 'No queue active' });
+				emptyState.createEl('p', {
+					text: 'Add episodes to queue to see them here',
+					cls: 'queue-empty-hint'
+				});
+				return;
+			}
+
+			// Queue controls
+			const controls = queueSection.createDiv({ cls: 'queue-controls' });
+
+			// Shuffle button
+			const shuffleBtn = controls.createEl('button', {
+				text: `Shuffle: ${queue.shuffle ? 'On' : 'Off'}`,
+				cls: `queue-control-btn ${queue.shuffle ? 'active' : ''}`
+			});
+			shuffleBtn.addEventListener('click', async () => {
+				try {
+					const queueManager = this.plugin.getQueueManager();
+					await queueManager.toggleShuffle(queue.id);
+					await this.renderPlayer();
+				} catch (error) {
+					console.error('Failed to toggle shuffle:', error);
+				}
+			});
+
+			// Repeat button
+			const repeatBtn = controls.createEl('button', {
+				text: `Repeat: ${this.formatRepeatMode(queue.repeat)}`,
+				cls: `queue-control-btn ${queue.repeat !== 'none' ? 'active' : ''}`
+			});
+			repeatBtn.addEventListener('click', async () => {
+				try {
+					const queueManager = this.plugin.getQueueManager();
+					const modes: Array<'none' | 'one' | 'all'> = ['none', 'one', 'all'];
+					const currentIndex = modes.indexOf(queue.repeat);
+					const nextMode = modes[(currentIndex + 1) % modes.length];
+					await queueManager.setRepeat(queue.id, nextMode);
+					await this.renderPlayer();
+				} catch (error) {
+					console.error('Failed to change repeat mode:', error);
+				}
+			});
+
+			// Episode list
+			await this.renderQueueEpisodeList(queueSection, queue);
+
+		} catch (error) {
+			console.error('Failed to render queue section:', error);
+			const errorState = queueSection.createDiv({ cls: 'queue-error-state' });
+			errorState.createEl('p', { text: 'Failed to load queue' });
+		}
+	}
+
+	/**
+	 * Get the current queue
+	 */
+	private async getCurrentQueue(): Promise<Queue | null> {
+		try {
+			const queueManager = this.plugin.getQueueManager();
+
+			// Try to get queue from current queue ID
+			if (this.currentQueueId) {
+				const queue = await queueManager.getQueue(this.currentQueueId);
+				if (queue) return queue;
+			}
+
+			// Otherwise, get the first available queue (or default queue)
+			const allQueues = await queueManager.getAllQueues();
+			if (allQueues.length > 0) {
+				this.currentQueueId = allQueues[0].id;
+				return allQueues[0];
+			}
+
+			return null;
+		} catch (error) {
+			console.error('Failed to get current queue:', error);
+			return null;
+		}
+	}
+
+	/**
+	 * Render queue episode list
+	 */
+	private async renderQueueEpisodeList(container: HTMLElement, queue: Queue): Promise<void> {
+		const listContainer = container.createDiv({ cls: 'queue-episode-list' });
+
+		if (queue.episodeIds.length === 0) {
+			listContainer.createEl('p', {
+				text: 'Queue is empty',
+				cls: 'queue-empty-text'
+			});
+			return;
+		}
+
+		const episodeManager = this.plugin.getEpisodeManager();
+
+		// Info bar
+		const info = listContainer.createDiv({ cls: 'queue-info' });
+		info.createSpan({
+			text: `${queue.episodeIds.length} episodes`,
+			cls: 'queue-count'
+		});
+		info.createSpan({
+			text: ` • Current: ${queue.currentIndex + 1}`,
+			cls: 'queue-current'
+		});
+
+		// Episodes
+		const episodesContainer = listContainer.createDiv({ cls: 'queue-episodes' });
+
+		for (let i = 0; i < Math.min(queue.episodeIds.length, 10); i++) {
+			const episodeId = queue.episodeIds[i];
+			try {
+				const episode = await episodeManager.getEpisodeWithProgress(episodeId);
+				if (episode) {
+					this.renderQueueEpisodeItem(episodesContainer, episode, i, queue.currentIndex === i);
+				}
+			} catch (error) {
+				console.error(`Failed to load episode: ${episodeId}`, error);
+			}
+		}
+
+		// Show "more" indicator if queue is longer
+		if (queue.episodeIds.length > 10) {
+			const more = episodesContainer.createDiv({ cls: 'queue-more' });
+			more.createEl('span', {
+				text: `+ ${queue.episodeIds.length - 10} more episodes`,
+				cls: 'queue-more-text'
+			});
+		}
+	}
+
+	/**
+	 * Render a queue episode item
+	 */
+	private renderQueueEpisodeItem(
+		container: HTMLElement,
+		episode: EpisodeWithProgress,
+		index: number,
+		isCurrent: boolean
+	): void {
+		const item = container.createDiv({
+			cls: isCurrent ? 'queue-episode-item current' : 'queue-episode-item'
+		});
+
+		// Index
+		const indexEl = item.createDiv({ cls: 'queue-episode-index' });
+		indexEl.textContent = `${index + 1}`;
+		if (isCurrent) {
+			indexEl.innerHTML = '▶';
+		}
+
+		// Info
+		const info = item.createDiv({ cls: 'queue-episode-info' });
+
+		const title = info.createEl('div', {
+			text: episode.title,
+			cls: 'queue-episode-title'
+		});
+
+		// Truncate long titles
+		if (episode.title.length > 40) {
+			title.textContent = episode.title.substring(0, 40) + '...';
+			title.setAttribute('title', episode.title);
+		}
+
+		// Duration
+		if (episode.duration) {
+			info.createEl('div', {
+				text: this.formatDuration(episode.duration),
+				cls: 'queue-episode-duration'
+			});
+		}
+
+		// Click to play
+		item.addEventListener('click', async () => {
+			try {
+				const queueManager = this.plugin.getQueueManager();
+				if (this.currentQueueId) {
+					// Jump to this episode in the queue
+					await queueManager.jumpTo(this.currentQueueId, index);
+
+					// Load and play the episode
+					await this.plugin.playerController.loadEpisode(episode, true, true);
+
+					// Refresh UI
+					await this.renderPlayer();
+				}
+			} catch (error) {
+				console.error('Failed to play episode from queue:', error);
+			}
+		});
+	}
+
+	/**
+	 * Format repeat mode
+	 */
+	private formatRepeatMode(mode: 'none' | 'one' | 'all'): string {
+		switch (mode) {
+			case 'none': return 'Off';
+			case 'one': return 'One';
+			case 'all': return 'All';
+		}
+	}
+
+	/**
+	 * Format duration in seconds to human-readable string
+	 */
+	private formatDuration(seconds: number): string {
+		const hours = Math.floor(seconds / 3600);
+		const minutes = Math.floor((seconds % 3600) / 60);
+
+		if (hours > 0) {
+			return `${hours}h ${minutes}m`;
+		} else {
+			return `${minutes}m`;
 		}
 	}
 }

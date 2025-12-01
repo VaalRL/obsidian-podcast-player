@@ -9,7 +9,7 @@
 
 import { ItemView, WorkspaceLeaf, Menu, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { Podcast, Episode } from '../model';
+import { Podcast, Episode, Playlist } from '../model';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
 import { SubscribePodcastModal } from './SubscribePodcastModal';
@@ -24,10 +24,13 @@ export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 export class PodcastSidebarView extends ItemView {
 	plugin: PodcastPlayerPlugin;
 	private sidebarContentEl: HTMLElement;
+	private viewMode: 'podcasts' | 'playlists' = 'podcasts';
 	private selectedPodcast: Podcast | null = null;
+	private selectedPlaylist: Playlist | null = null;
 	private searchQuery: string = '';
 	private podcastSortBy: 'title' | 'author' | 'date' = 'title';
 	private episodeSortBy: 'title' | 'date' | 'duration' = 'date';
+	private playlistSortBy: 'name' | 'date' | 'count' = 'date';
 	private sortDirection: 'asc' | 'desc' = 'asc';
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
@@ -91,11 +94,15 @@ export class PodcastSidebarView extends ItemView {
 		// Sort options
 		this.renderSortOptions();
 
-		// Podcast list or episode list
+		// Render content based on current view
 		if (this.selectedPodcast) {
 			await this.renderEpisodeList();
-		} else {
+		} else if (this.selectedPlaylist) {
+			await this.renderPlaylistDetails();
+		} else if (this.viewMode === 'podcasts') {
 			await this.renderPodcastList();
+		} else {
+			await this.renderPlaylistList();
 		}
 	}
 
@@ -105,9 +112,13 @@ export class PodcastSidebarView extends ItemView {
 	private renderSearchBox(): void {
 		const searchContainer = this.sidebarContentEl.createDiv({ cls: 'sidebar-search-container' });
 
+		const placeholder = this.selectedPodcast ? 'Search episodes...' :
+		                    this.selectedPlaylist ? 'Search playlist episodes...' :
+		                    this.viewMode === 'podcasts' ? 'Search podcasts...' : 'Search playlists...';
+
 		const searchInput = searchContainer.createEl('input', {
 			type: 'text',
-			placeholder: this.selectedPodcast ? 'Search episodes...' : 'Search podcasts...',
+			placeholder: placeholder,
 			cls: 'sidebar-search-input',
 			value: this.searchQuery
 		});
@@ -155,6 +166,30 @@ export class PodcastSidebarView extends ItemView {
 				this.episodeSortBy = (e.target as HTMLSelectElement).value as 'title' | 'date' | 'duration';
 				this.render();
 			});
+		} else if (this.selectedPlaylist) {
+			// Playlist episode sort options (similar to episode sort)
+			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
+			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
+			const durationOption = sortBySelect.createEl('option', { value: 'duration', text: 'Duration' });
+
+			sortBySelect.value = this.episodeSortBy;
+
+			sortBySelect.addEventListener('change', (e) => {
+				this.episodeSortBy = (e.target as HTMLSelectElement).value as 'title' | 'date' | 'duration';
+				this.render();
+			});
+		} else if (this.viewMode === 'playlists') {
+			// Playlist sort options
+			const nameOption = sortBySelect.createEl('option', { value: 'name', text: 'Name' });
+			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
+			const countOption = sortBySelect.createEl('option', { value: 'count', text: 'Episode Count' });
+
+			sortBySelect.value = this.playlistSortBy;
+
+			sortBySelect.addEventListener('change', (e) => {
+				this.playlistSortBy = (e.target as HTMLSelectElement).value as 'name' | 'date' | 'count';
+				this.render();
+			});
 		} else {
 			// Podcast sort options
 			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
@@ -187,45 +222,85 @@ export class PodcastSidebarView extends ItemView {
 	private renderHeader(): void {
 		const header = this.sidebarContentEl.createDiv({ cls: 'sidebar-header' });
 
-		// Back button (if viewing episodes)
-		if (this.selectedPodcast) {
+		// Back button (if viewing details)
+		if (this.selectedPodcast || this.selectedPlaylist) {
 			const backBtn = header.createEl('button', {
 				cls: 'sidebar-back-button',
-				attr: { 'aria-label': 'Back to podcasts' }
+				attr: { 'aria-label': 'Back to list' }
 			});
 			backBtn.innerHTML = '← Back';
 			backBtn.addEventListener('click', () => {
 				this.selectedPodcast = null;
+				this.selectedPlaylist = null;
 				this.render();
 			});
 		}
 
 		// Title
-		const title = header.createEl('h2', {
-			text: this.selectedPodcast ? this.selectedPodcast.title : 'My Podcasts',
-			cls: 'sidebar-title'
-		});
+		let title = '';
+		if (this.selectedPodcast) {
+			title = this.selectedPodcast.title;
+		} else if (this.selectedPlaylist) {
+			title = this.selectedPlaylist.name;
+		} else {
+			title = this.viewMode === 'podcasts' ? 'My Podcasts' : 'My Playlists';
+		}
+
+		header.createEl('h2', { text: title, cls: 'sidebar-title' });
+
+		// Mode toggle (only if not viewing details)
+		if (!this.selectedPodcast && !this.selectedPlaylist) {
+			const modeToggle = header.createDiv({ cls: 'sidebar-mode-toggle' });
+
+			const podcastsBtn = modeToggle.createEl('button', {
+				text: 'Podcasts',
+				cls: this.viewMode === 'podcasts' ? 'mode-active' : 'mode-inactive'
+			});
+			podcastsBtn.addEventListener('click', () => {
+				this.viewMode = 'podcasts';
+				this.render();
+			});
+
+			const playlistsBtn = modeToggle.createEl('button', {
+				text: 'Playlists',
+				cls: this.viewMode === 'playlists' ? 'mode-active' : 'mode-inactive'
+			});
+			playlistsBtn.addEventListener('click', () => {
+				this.viewMode = 'playlists';
+				this.render();
+			});
+		}
 
 		// Action buttons
 		const actions = header.createDiv({ cls: 'sidebar-actions' });
 
-		if (!this.selectedPodcast) {
-			// Add podcast button
-			const addBtn = actions.createEl('button', {
-				cls: 'sidebar-action-button',
-				attr: { 'aria-label': 'Subscribe to podcast' }
-			});
-			addBtn.innerHTML = '➕';
-			addBtn.addEventListener('click', () => this.handleAddPodcast());
+		if (!this.selectedPodcast && !this.selectedPlaylist) {
+			if (this.viewMode === 'podcasts') {
+				// Add podcast button
+				const addBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': 'Subscribe to podcast' }
+				});
+				addBtn.innerHTML = '➕';
+				addBtn.addEventListener('click', () => this.handleAddPodcast());
 
-			// Refresh button
-			const refreshBtn = actions.createEl('button', {
-				cls: 'sidebar-action-button',
-				attr: { 'aria-label': 'Refresh feeds' }
-			});
-			refreshBtn.innerHTML = '🔄';
-			refreshBtn.addEventListener('click', () => this.handleRefreshFeeds());
-		} else {
+				// Refresh button
+				const refreshBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': 'Refresh feeds' }
+				});
+				refreshBtn.innerHTML = '🔄';
+				refreshBtn.addEventListener('click', () => this.handleRefreshFeeds());
+			} else {
+				// Create playlist button
+				const addBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': 'Create playlist' }
+				});
+				addBtn.innerHTML = '➕';
+				addBtn.addEventListener('click', () => this.handleCreatePlaylist());
+			}
+		} else if (this.selectedPodcast) {
 			// Settings button (for selected podcast)
 			const settingsBtn = actions.createEl('button', {
 				cls: 'sidebar-action-button',
@@ -788,6 +863,382 @@ export class PodcastSidebarView extends ItemView {
 		});
 
 		return sorted;
+	}
+
+	/**
+	 * Render the list of playlists
+	 */
+	private async renderPlaylistList(): Promise<void> {
+		const listContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-list-container' });
+
+		const playlistManager = this.plugin.getPlaylistManager();
+		let playlists = await playlistManager.getAllPlaylists();
+
+		// Filter playlists based on search query
+		if (this.searchQuery) {
+			playlists = this.filterPlaylists(playlists, this.searchQuery);
+		}
+
+		// Sort playlists
+		playlists = this.sortPlaylists(playlists, this.playlistSortBy, this.sortDirection);
+
+		if (playlists.length === 0) {
+			const empty = listContainer.createDiv({ cls: 'empty-state' });
+			if (this.searchQuery) {
+				empty.createEl('p', { text: 'No playlists found' });
+				empty.createEl('p', {
+					text: `No playlists match "${this.searchQuery}"`,
+					cls: 'empty-state-hint'
+				});
+			} else {
+				empty.createEl('p', { text: 'No playlists yet' });
+				empty.createEl('p', {
+					text: 'Click the + button to create a playlist',
+					cls: 'empty-state-hint'
+				});
+			}
+			return;
+		}
+
+		for (const playlist of playlists) {
+			this.renderPlaylistItem(listContainer, playlist);
+		}
+	}
+
+	/**
+	 * Render a single playlist item
+	 */
+	private renderPlaylistItem(container: HTMLElement, playlist: Playlist): void {
+		const item = container.createDiv({ cls: 'playlist-item' });
+
+		// Info section
+		const info = item.createDiv({ cls: 'playlist-info' });
+		info.createEl('h3', { text: playlist.name, cls: 'playlist-title' });
+
+		if (playlist.description) {
+			info.createEl('p', { text: playlist.description, cls: 'playlist-description' });
+		}
+
+		// Metadata
+		const metadata = info.createDiv({ cls: 'playlist-metadata' });
+		metadata.createSpan({ text: `${playlist.episodeIds.length} episodes`, cls: 'playlist-count' });
+		metadata.createSpan({ text: ` • Updated ${this.formatDate(playlist.updatedAt)}`, cls: 'playlist-date' });
+
+		// Click to view details
+		item.addEventListener('click', () => {
+			this.selectedPlaylist = playlist;
+			this.render();
+		});
+
+		// Context menu
+		item.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			this.showPlaylistContextMenu(playlist, e);
+		});
+	}
+
+	/**
+	 * Render playlist details (episodes)
+	 */
+	private async renderPlaylistDetails(): Promise<void> {
+		if (!this.selectedPlaylist) return;
+
+		const detailsContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-details-container' });
+
+		// Metadata section
+		const metadata = detailsContainer.createDiv({ cls: 'playlist-details-metadata' });
+		if (this.selectedPlaylist.description) {
+			metadata.createEl('p', { text: this.selectedPlaylist.description, cls: 'playlist-details-description' });
+		}
+		metadata.createEl('p', {
+			text: `${this.selectedPlaylist.episodeIds.length} episodes • Created ${this.formatDate(this.selectedPlaylist.createdAt)}`,
+			cls: 'playlist-details-info'
+		});
+
+		// Episodes list
+		await this.renderPlaylistEpisodeList(detailsContainer, this.selectedPlaylist.episodeIds);
+	}
+
+	/**
+	 * Render episode list for playlist
+	 */
+	private async renderPlaylistEpisodeList(container: HTMLElement, episodeIds: string[]): Promise<void> {
+		if (episodeIds.length === 0) {
+			const empty = container.createDiv({ cls: 'empty-state' });
+			empty.createEl('p', { text: 'No episodes in this playlist' });
+			return;
+		}
+
+		const episodeManager = this.plugin.getEpisodeManager();
+		const listContainer = container.createDiv({ cls: 'playlist-episode-list' });
+
+		for (let i = 0; i < episodeIds.length; i++) {
+			const episodeId = episodeIds[i];
+			try {
+				const episodeWithProgress = await episodeManager.getEpisodeWithProgress(episodeId);
+				if (episodeWithProgress) {
+					this.renderPlaylistEpisodeItem(listContainer, episodeWithProgress, i);
+				}
+			} catch (error) {
+				console.error(`Failed to load episode: ${episodeId}`, error);
+			}
+		}
+	}
+
+	/**
+	 * Render a single episode item in playlist
+	 */
+	private renderPlaylistEpisodeItem(container: HTMLElement, episode: Episode, index: number): void {
+		const item = container.createDiv({ cls: 'playlist-episode-item' });
+
+		// Index
+		const indexEl = item.createDiv({ cls: 'playlist-episode-index' });
+		indexEl.textContent = `${index + 1}`;
+
+		// Info
+		const info = item.createDiv({ cls: 'playlist-episode-info' });
+		info.createEl('h4', { text: episode.title, cls: 'playlist-episode-title' });
+
+		// Metadata
+		const metadata = info.createDiv({ cls: 'playlist-episode-metadata' });
+		if (episode.duration) {
+			metadata.createSpan({ text: this.formatDuration(episode.duration), cls: 'playlist-episode-duration' });
+		}
+
+		// Play button
+		const playBtn = item.createEl('button', {
+			cls: 'playlist-episode-play',
+			attr: { 'aria-label': 'Play episode' }
+		});
+		playBtn.innerHTML = '▶️';
+		playBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.handlePlayEpisode(episode);
+		});
+
+		// Click to show episode details
+		item.addEventListener('click', () => {
+			this.handleEpisodeClick(episode);
+		});
+
+		// Context menu
+		item.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			this.showPlaylistEpisodeContextMenu(episode, index, e);
+		});
+	}
+
+	/**
+	 * Handle create playlist button click
+	 */
+	private async handleCreatePlaylist(): Promise<void> {
+		try {
+			// Prompt for playlist name
+			const name = await this.promptForInput('Create Playlist', 'Enter playlist name:');
+			if (!name) return;
+
+			// Optionally prompt for description
+			const description = await this.promptForInput('Playlist Description', 'Enter description (optional):');
+
+			const playlistManager = this.plugin.getPlaylistManager();
+			const playlist = await playlistManager.createPlaylist(name, description || undefined);
+
+			new Notice(`Playlist "${name}" created`);
+
+			// Refresh the view
+			await this.render();
+		} catch (error) {
+			console.error('Failed to create playlist:', error);
+			new Notice('Failed to create playlist');
+		}
+	}
+
+	/**
+	 * Show context menu for playlist
+	 */
+	private showPlaylistContextMenu(playlist: Playlist, event: MouseEvent): void {
+		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('View Details')
+				.setIcon('list')
+				.onClick(() => {
+					this.selectedPlaylist = playlist;
+					this.render();
+				})
+		);
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Rename')
+				.setIcon('pencil')
+				.onClick(async () => {
+					const newName = await this.promptForInput('Rename Playlist', 'Enter new name:', playlist.name);
+					if (!newName || newName === playlist.name) return;
+
+					try {
+						const playlistManager = this.plugin.getPlaylistManager();
+						await playlistManager.updatePlaylist(playlist.id, { name: newName });
+						new Notice('Playlist renamed');
+						await this.render();
+					} catch (error) {
+						console.error('Failed to rename playlist:', error);
+						new Notice('Failed to rename playlist');
+					}
+				})
+		);
+
+		menu.addSeparator();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Delete')
+				.setIcon('trash')
+				.onClick(async () => {
+					try {
+						const playlistManager = this.plugin.getPlaylistManager();
+						await playlistManager.deletePlaylist(playlist.id);
+						new Notice('Playlist deleted');
+						await this.render();
+					} catch (error) {
+						console.error('Failed to delete playlist:', error);
+						new Notice('Failed to delete playlist');
+					}
+				})
+		);
+
+		menu.showAtMouseEvent(event);
+	}
+
+	/**
+	 * Show context menu for episode in playlist
+	 */
+	private showPlaylistEpisodeContextMenu(episode: Episode, index: number, event: MouseEvent): void {
+		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('View Details')
+				.setIcon('info')
+				.onClick(() => this.handleEpisodeClick(episode))
+		);
+
+		menu.addSeparator();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Play')
+				.setIcon('play')
+				.onClick(() => this.handlePlayEpisode(episode))
+		);
+
+		menu.addSeparator();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Remove from Playlist')
+				.setIcon('trash')
+				.onClick(async () => {
+					try {
+						if (this.selectedPlaylist) {
+							const playlistManager = this.plugin.getPlaylistManager();
+							await playlistManager.removeEpisode(this.selectedPlaylist.id, episode.id);
+							this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
+							new Notice('Episode removed from playlist');
+							await this.render();
+						}
+					} catch (error) {
+						console.error('Failed to remove episode:', error);
+						new Notice('Failed to remove episode');
+					}
+				})
+		);
+
+		menu.showAtMouseEvent(event);
+	}
+
+	/**
+	 * Filter playlists based on search query
+	 */
+	private filterPlaylists(playlists: Playlist[], query: string): Playlist[] {
+		const lowerQuery = query.toLowerCase();
+		return playlists.filter(playlist => {
+			// Search in name
+			if (playlist.name.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			// Search in description
+			if (playlist.description?.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			return false;
+		});
+	}
+
+	/**
+	 * Sort playlists based on criteria
+	 */
+	private sortPlaylists(
+		playlists: Playlist[],
+		sortBy: 'name' | 'date' | 'count',
+		direction: 'asc' | 'desc'
+	): Playlist[] {
+		const sorted = [...playlists].sort((a, b) => {
+			let comparison = 0;
+
+			switch (sortBy) {
+				case 'name':
+					comparison = a.name.localeCompare(b.name);
+					break;
+				case 'date':
+					const aDate = new Date(a.createdAt).getTime();
+					const bDate = new Date(b.createdAt).getTime();
+					comparison = aDate - bDate;
+					break;
+				case 'count':
+					comparison = a.episodeIds.length - b.episodeIds.length;
+					break;
+			}
+
+			return direction === 'asc' ? comparison : -comparison;
+		});
+
+		return sorted;
+	}
+
+	/**
+	 * Format date to relative time
+	 */
+	private formatDate(date: Date): string {
+		const now = new Date();
+		const diffMs = now.getTime() - new Date(date).getTime();
+		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+		if (diffDays === 0) {
+			return 'today';
+		} else if (diffDays === 1) {
+			return 'yesterday';
+		} else if (diffDays < 7) {
+			return `${diffDays} days ago`;
+		} else if (diffDays < 30) {
+			const weeks = Math.floor(diffDays / 7);
+			return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+		} else {
+			const months = Math.floor(diffDays / 30);
+			return `${months} month${months > 1 ? 's' : ''} ago`;
+		}
+	}
+
+	/**
+	 * Prompt user for text input
+	 */
+	private async promptForInput(title: string, message: string, defaultValue?: string): Promise<string | null> {
+		return new Promise((resolve) => {
+			// Simple prompt using browser's prompt (can be replaced with a custom modal later)
+			const result = prompt(message, defaultValue || '');
+			resolve(result);
+		});
 	}
 
 	/**

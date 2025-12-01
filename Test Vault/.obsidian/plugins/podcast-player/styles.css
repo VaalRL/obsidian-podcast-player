@@ -153,3 +153,274 @@
 .text-small {
 	font-size: var(--font-ui-smaller);
 }
+
+/* ==========================================================================
+   Sidebar Mode Toggle (Podcasts/Playlists)
+   ========================================================================== */
+
+.sidebar-mode-toggle {
+	display: flex;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-3);
+	padding: 0 var(--size-4-2);
+}
+
+.sidebar-mode-toggle button {
+	flex: 1;
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: all 0.2s;
+	font-weight: 500;
+}
+
+.sidebar-mode-toggle button.mode-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.sidebar-mode-toggle button.mode-inactive {
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+}
+
+.sidebar-mode-toggle button.mode-inactive:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* ==========================================================================
+   Playlist List
+   ========================================================================== */
+
+.playlist-item {
+	padding: var(--size-4-3);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: background-color 0.2s;
+	border: 1px solid var(--background-modifier-border);
+	margin-bottom: var(--size-4-2);
+}
+
+.playlist-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.playlist-item-title {
+	font-weight: 600;
+	margin: 0 0 var(--size-4-1) 0;
+}
+
+.playlist-item-description {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	margin: 0 0 var(--size-4-2) 0;
+}
+
+.playlist-item-metadata {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	display: flex;
+	gap: var(--size-4-2);
+}
+
+/* ==========================================================================
+   Playlist Episode List
+   ========================================================================== */
+
+.playlist-episode-item {
+	display: flex;
+	align-items: center;
+	padding: var(--size-4-2);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: background-color 0.2s;
+	gap: var(--size-4-3);
+	border: 1px solid var(--background-modifier-border);
+	margin-bottom: var(--size-4-1);
+}
+
+.playlist-episode-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.playlist-episode-index {
+	min-width: 30px;
+	text-align: center;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.playlist-episode-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.playlist-episode-title {
+	font-weight: 500;
+	margin: 0 0 var(--size-4-1) 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.playlist-episode-duration {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Queue Section
+   ========================================================================== */
+
+.queue-section {
+	margin-top: var(--size-4-4);
+	padding-top: var(--size-4-4);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.queue-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--size-4-3);
+}
+
+.queue-title {
+	margin: 0;
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+}
+
+.queue-controls {
+	display: flex;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-3);
+}
+
+.queue-control-btn {
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: var(--radius-s);
+	background-color: var(--background-secondary);
+	cursor: pointer;
+	transition: all 0.2s;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.queue-control-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.queue-control-btn.active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* ==========================================================================
+   Queue Episode List
+   ========================================================================== */
+
+.queue-episode-list {
+	background-color: var(--background-secondary);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-3);
+}
+
+.queue-info {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	margin-bottom: var(--size-4-3);
+	padding-bottom: var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.queue-episodes {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.queue-episode-item {
+	display: flex;
+	align-items: center;
+	padding: var(--size-4-2);
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	transition: background-color 0.2s;
+	gap: var(--size-4-2);
+}
+
+.queue-episode-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.queue-episode-item.current {
+	background-color: var(--background-modifier-active-hover);
+}
+
+.queue-episode-index {
+	min-width: 24px;
+	text-align: center;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	font-weight: 600;
+}
+
+.queue-episode-item.current .queue-episode-index {
+	color: var(--interactive-accent);
+}
+
+.queue-episode-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.queue-episode-title {
+	font-size: var(--font-ui-small);
+	margin-bottom: var(--size-4-1);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.queue-episode-duration {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.queue-more {
+	text-align: center;
+	padding: var(--size-4-2);
+	margin-top: var(--size-4-2);
+}
+
+.queue-more-text {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* ==========================================================================
+   Empty States
+   ========================================================================== */
+
+.queue-empty-state {
+	text-align: center;
+	padding: var(--size-4-4);
+	color: var(--text-muted);
+}
+
+.queue-empty-hint {
+	font-size: var(--font-ui-smaller);
+	margin-top: var(--size-4-2);
+}
+
+.queue-error-state {
+	text-align: center;
+	padding: var(--size-4-4);
+	color: var(--text-error);
+}

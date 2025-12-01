@@ -137,9 +137,10 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Register settings tab
 		this.addSettingTab(new PodcastPlayerSettingTab(this.app, this));
 
-		// Add ribbon icon for quick access
+		// Add ribbon icon for quick access - opens both left and right panels
 		this.addRibbonIcon('podcast', 'Podcast Player', async (evt: MouseEvent) => {
-			await this.activateSidebarView();
+			await this.activateSidebarView(); // Left panel: Podcast management
+			await this.activatePlayerView(); // Right panel: Player controls
 		});
 
 		// Register commands
@@ -317,8 +318,8 @@ export default class PodcastPlayerPlugin extends Plugin {
 			// View already exists, reveal it
 			leaf = leaves[0];
 		} else {
-			// Create new view in right sidebar
-			leaf = workspace.getRightLeaf(false);
+			// Create new view in left sidebar
+			leaf = workspace.getLeftLeaf(false);
 			if (leaf) {
 				await leaf.setViewState({
 					type: PODCAST_SIDEBAR_VIEW_TYPE,

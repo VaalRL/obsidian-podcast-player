@@ -143,6 +143,7 @@ describe('FeedService', () => {
 		it('should use cached feed if available', async () => {
 			mockCacheStore.getCacheEntry.mockResolvedValue({
 				url: 'https://example.com/feed.rss',
+				feedUrl: 'https://example.com/feed.rss',
 				data: sampleRSSFeed,
 				cachedAt: new Date(Date.now()),
 				expiresAt: new Date(Date.now() + 3600000),
@@ -160,6 +161,7 @@ describe('FeedService', () => {
 		it('should bypass cache when useCache is false', async () => {
 			mockCacheStore.getCacheEntry.mockResolvedValue({
 				url: 'https://example.com/feed.rss',
+				feedUrl: 'https://example.com/feed.rss',
 				data: sampleRSSFeed,
 				cachedAt: new Date(Date.now()),
 				expiresAt: new Date(Date.now() + 3600000),

@@ -7,10 +7,11 @@
 
 import { logger } from '../utils/Logger';
 import { FeedParseError, NetworkError, StorageError, handleError } from '../utils/errorUtils';
-import { Podcast, Episode, PodcastSettings } from '../model';
+import { Podcast, Episode, PodcastSettings, PodcastSearchResult } from '../model';
 import { FeedService } from '../feed/FeedService';
 import { SubscriptionStore } from '../storage/SubscriptionStore';
 import { ImageCacheStore } from '../storage/CacheStore';
+import { iTunesSearchService, SearchOptions } from './iTunesSearchService';
 
 /**
  * Subscription result
@@ -28,6 +29,7 @@ export class PodcastService {
 	private feedService: FeedService;
 	private subscriptionStore: SubscriptionStore;
 	private imageCache: ImageCacheStore | null = null;
+	private searchService: iTunesSearchService;
 
 	constructor(
 		feedService: FeedService,
@@ -37,6 +39,7 @@ export class PodcastService {
 		this.feedService = feedService;
 		this.subscriptionStore = subscriptionStore;
 		this.imageCache = imageCache || null;
+		this.searchService = new iTunesSearchService();
 	}
 
 	/**
@@ -383,5 +386,75 @@ export class PodcastService {
 		await this.subscriptionStore.importSubscriptions(data, replace);
 
 		logger.methodExit('PodcastService', 'importSubscriptions');
+	}
+
+	/**
+	 * Search for podcasts online using iTunes Search API
+	 *
+	 * @param query - Search query string
+	 * @param options - Search options (limit, country, etc.)
+	 * @returns Array of podcast search results from iTunes
+	 */
+	async searchOnline(
+		query: string,
+		options?: SearchOptions
+	): Promise<PodcastSearchResult[]> {
+		logger.methodEntry('PodcastService', 'searchOnline', query);
+
+		const results = await this.searchService.searchPodcasts(query, options);
+
+		logger.methodExit('PodcastService', 'searchOnline', `count=${results.length}`);
+		return results;
+	}
+
+	/**
+	 * Search and subscribe to a podcast in one step
+	 *
+	 * @param query - Search query
+	 * @param resultIndex - Index of search result to subscribe to (default: 0)
+	 * @param searchOptions - Search options
+	 * @returns Subscription result
+	 */
+	async searchAndSubscribe(
+		query: string,
+		resultIndex = 0,
+		searchOptions?: SearchOptions
+	): Promise<SubscriptionResult> {
+		logger.methodEntry('PodcastService', 'searchAndSubscribe', query);
+
+		try {
+			// Search for podcasts online
+			const results = await this.searchOnline(query, searchOptions);
+
+			if (results.length === 0) {
+				return {
+					success: false,
+					error: 'No podcasts found matching your search',
+				};
+			}
+
+			// Validate result index
+			if (resultIndex < 0 || resultIndex >= results.length) {
+				return {
+					success: false,
+					error: `Invalid result index: ${resultIndex}`,
+				};
+			}
+
+			// Subscribe to the selected result
+			const selectedResult = results[resultIndex];
+			const subscriptionResult = await this.subscribe(selectedResult.feedUrl);
+
+			logger.methodExit('PodcastService', 'searchAndSubscribe');
+			return subscriptionResult;
+
+		} catch (error) {
+			logger.error('Search and subscribe failed', error);
+
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : 'Unknown error',
+			};
+		}
 	}
 }

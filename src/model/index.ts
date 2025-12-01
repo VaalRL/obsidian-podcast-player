@@ -224,3 +224,25 @@ export interface FeedUpdateResult {
 	/** Update timestamp */
 	updatedAt: Date;
 }
+
+/**
+ * Podcast Search Result - Result from podcast search API
+ */
+export interface PodcastSearchResult {
+	/** Podcast title */
+	title: string;
+	/** Author/Creator name */
+	author?: string;
+	/** Podcast description */
+	description?: string;
+	/** RSS/Atom feed URL */
+	feedUrl: string;
+	/** Podcast cover image URL */
+	artworkUrl?: string;
+	/** iTunes/External collection ID */
+	collectionId?: string;
+	/** Number of episodes (if available) */
+	episodeCount?: number;
+	/** List of genres/categories */
+	genres?: string[];
+}
