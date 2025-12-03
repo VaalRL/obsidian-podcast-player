@@ -8,7 +8,7 @@
  * - Action buttons (play, add to queue/playlist, export to note)
  */
 
-import { App, Modal, Notice } from 'obsidian';
+import { App, Modal, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Episode, Podcast, PlayProgress } from '../model';
 import { AddToQueueModal } from './AddToQueueModal';
@@ -33,6 +33,7 @@ export class EpisodeDetailModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('episode-detail-modal');
+		this.modalEl.addClass('episode-detail-modal-container');
 
 		// Load additional data
 		await this.loadData();
@@ -207,10 +208,10 @@ export class EpisodeDetailModal extends Modal {
 		});
 
 		// Completed status
-		if (this.progress.completed) {
-			const completedRow = section.createDiv({ cls: 'episode-detail-row' });
-			completedRow.createSpan({ text: '✓ Completed', cls: 'episode-detail-completed' });
-		}
+		const completedRow = section.createDiv({ cls: 'episode-detail-row' });
+		const completedSpan = completedRow.createSpan({ cls: 'episode-detail-completed' });
+		setIcon(completedSpan, 'check');
+		completedSpan.createSpan({ text: ' Completed' });
 
 		// Last played
 		if (this.progress.lastPlayedAt) {
@@ -229,27 +230,28 @@ export class EpisodeDetailModal extends Modal {
 
 		// Play button
 		const playBtn = actions.createEl('button', {
-			text: '▶️ Play',
 			cls: 'mod-cta'
 		});
+		setIcon(playBtn, 'play');
+		playBtn.createSpan({ text: ' Play' });
 		playBtn.addEventListener('click', () => this.handlePlay());
 
 		// Add to Queue button
-		const queueBtn = actions.createEl('button', {
-			text: '➕ Add to Queue'
-		});
+		const queueBtn = actions.createEl('button');
+		setIcon(queueBtn, 'list-plus');
+		queueBtn.createSpan({ text: ' Add to Queue' });
 		queueBtn.addEventListener('click', () => this.handleAddToQueue());
 
 		// Add to Playlist button
-		const playlistBtn = actions.createEl('button', {
-			text: '📁 Add to Playlist'
-		});
+		const playlistBtn = actions.createEl('button');
+		setIcon(playlistBtn, 'folder-plus');
+		playlistBtn.createSpan({ text: ' Add to Playlist' });
 		playlistBtn.addEventListener('click', () => this.handleAddToPlaylist());
 
 		// Export to Note button
-		const exportBtn = actions.createEl('button', {
-			text: '📝 Export to Note'
-		});
+		const exportBtn = actions.createEl('button');
+		setIcon(exportBtn, 'file-text');
+		exportBtn.createSpan({ text: ' Export to Note' });
 		exportBtn.addEventListener('click', () => this.handleExportToNote());
 
 		// Close button

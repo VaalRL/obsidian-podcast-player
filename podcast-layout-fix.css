@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Podcast Item Layout (Feed List)
+   ========================================================================== */
+
+.podcast-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-2) !important;
+    border-radius: var(--radius-s) !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.podcast-item:hover {
+    background-color: var(--background-modifier-hover) !important;
+}
+
+.podcast-image {
+    width: 50px !important;
+    height: 50px !important;
+    object-fit: cover !important;
+    border-radius: var(--radius-s) !important;
+    flex-shrink: 0 !important;
+}
+
+.podcast-image-placeholder {
+    width: 50px !important;
+    height: 50px !important;
+    background-color: var(--background-secondary) !important;
+    border-radius: var(--radius-s) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.podcast-image-placeholder svg {
+    width: 24px !important;
+    height: 24px !important;
+    color: var(--text-muted) !important;
+}
+
+.podcast-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+}
+
+.podcast-title {
+    font-weight: 600 !important;
+    margin: 0 !important;
+    font-size: var(--font-ui-medium) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.podcast-author {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.podcast-episode-count {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+/* Player View Thumbnail */
+.player-podcast-thumbnail {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-m);
+    object-fit: cover;
+    margin-bottom: var(--size-4-2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.episode-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Episode Detail Modal */
+.episode-detail-modal-container {
+    width: 800px !important;
+    max-width: 90vw !important;
+}

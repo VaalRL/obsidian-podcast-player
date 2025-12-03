@@ -1,0 +1,107 @@
+/* ==========================================================================
+   Episode Detail Modal Layout
+   ========================================================================== */
+
+.episode-detail-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.episode-detail-header {
+    text-align: center;
+    margin-bottom: var(--size-4-4);
+}
+
+.episode-detail-image {
+    max-width: 200px !important;
+    max-height: 200px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: var(--radius-m) !important;
+    margin: 0 auto var(--size-4-3) auto !important;
+    display: block !important;
+}
+
+.episode-detail-title {
+    margin-top: var(--size-4-2) !important;
+    margin-bottom: 0 !important;
+}
+
+.episode-detail-section {
+    margin-bottom: var(--size-4-4);
+}
+
+.episode-detail-section h3 {
+    margin-top: 0;
+    margin-bottom: var(--size-4-2);
+    font-size: var(--font-ui-medium);
+    font-weight: 600;
+}
+
+.episode-detail-section h4 {
+    margin-top: var(--size-4-3);
+    margin-bottom: var(--size-4-2);
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+}
+
+.episode-detail-row {
+    margin-bottom: var(--size-4-1);
+}
+
+.episode-detail-label {
+    font-weight: 600;
+    margin-right: var(--size-4-1);
+}
+
+.episode-detail-description {
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.episode-detail-progress-container {
+    margin: var(--size-4-2) 0;
+}
+
+.episode-detail-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+    margin-bottom: var(--size-4-1);
+}
+
+.episode-detail-progress-fill {
+    height: 100%;
+    background-color: var(--interactive-accent);
+    transition: width 0.3s ease;
+}
+
+.episode-detail-progress-text {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.episode-detail-completed {
+    color: var(--text-success);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--size-4-1);
+}
+
+.episode-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.episode-detail-actions button {
+    flex: 1;
+    min-width: 120px;
+}

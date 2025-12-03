@@ -12,24 +12,46 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = process.argv[2] === 'production';
 
-// Test Vault plugin path
-const testVaultPath = 'Test Vault/.obsidian/plugins/podcast-player';
+// Test Vault plugin paths - support multiple test vaults
+const testVaultPaths = [
+	'Test Vault/.obsidian/plugins/podcast-player',
+	'Podcast Test Vault/.obsidian/plugins/podcast-player'
+];
 
-// Ensure output directory exists
-if (!fs.existsSync(testVaultPath)) {
-	fs.mkdirSync(testVaultPath, { recursive: true });
-}
+// Primary output path (first vault)
+const primaryVaultPath = testVaultPaths[0];
 
-// Copy manifest and styles to Test Vault after build
-const copyToTestVault = () => {
+// Ensure all output directories exist
+testVaultPaths.forEach(vaultPath => {
+	if (!fs.existsSync(vaultPath)) {
+		fs.mkdirSync(vaultPath, { recursive: true });
+		console.log(`✓ Created directory: ${vaultPath}`);
+	}
+});
+
+// Copy manifest and styles to all Test Vaults after build
+const copyToTestVaults = () => {
 	const filesToCopy = ['manifest.json', 'styles.css'];
-	filesToCopy.forEach(file => {
-		if (fs.existsSync(file)) {
-			const dest = path.join(testVaultPath, file);
-			fs.copyFileSync(file, dest);
-			console.log(`✓ Copied ${file} to Test Vault`);
+
+	testVaultPaths.forEach(vaultPath => {
+		filesToCopy.forEach(file => {
+			if (fs.existsSync(file)) {
+				const dest = path.join(vaultPath, file);
+				fs.copyFileSync(file, dest);
+			}
+		});
+
+		// Copy main.js from primary vault to other vaults
+		if (vaultPath !== primaryVaultPath) {
+			const sourceMainJs = path.join(primaryVaultPath, 'main.js');
+			const destMainJs = path.join(vaultPath, 'main.js');
+			if (fs.existsSync(sourceMainJs)) {
+				fs.copyFileSync(sourceMainJs, destMainJs);
+			}
 		}
 	});
+
+	console.log(`✓ Copied files to ${testVaultPaths.length} test vault(s)`);
 };
 
 const context = await esbuild.context({
@@ -59,13 +81,13 @@ const context = await esbuild.context({
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: `${testVaultPath}/main.js`,
+	outfile: `${primaryVaultPath}/main.js`,
 	minify: prod,
 	plugins: [{
 		name: 'copy-files',
 		setup(build) {
 			build.onEnd(() => {
-				copyToTestVault();
+				copyToTestVaults();
 			});
 		}
 	}]
@@ -78,5 +100,7 @@ if (prod) {
 } else {
 	await context.watch();
 	console.log('👀 Watching for changes...');
-	console.log(`📦 Output: ${testVaultPath}/main.js`);
+	console.log(`📦 Primary output: ${primaryVaultPath}/main.js`);
+	console.log(`📦 Syncing to ${testVaultPaths.length} vault(s)`);
 }
+

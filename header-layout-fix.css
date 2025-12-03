@@ -1,0 +1,54 @@
+/* ==========================================================================
+   Header Layout Fix - Back Button on Same Row as Title
+   ========================================================================== */
+
+.sidebar-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: var(--size-4-2) var(--size-4-3) !important;
+    margin-bottom: var(--size-4-2) !important;
+    gap: var(--size-4-2) !important;
+    /* Add gap between back button and title */
+}
+
+.sidebar-back-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-1) !important;
+    border-radius: var(--radius-s) !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: 0 !important;
+    /* Remove bottom margin since it's now inline */
+    flex-shrink: 0 !important;
+    /* Prevent button from shrinking */
+}
+
+.sidebar-back-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+
+.sidebar-title {
+    flex: 1 !important;
+    /* Allow title to take remaining space */
+    margin: 0 !important;
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.sidebar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    flex-shrink: 0 !important;
+}

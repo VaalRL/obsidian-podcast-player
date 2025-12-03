@@ -281,7 +281,12 @@ export class FeedSyncManager {
 			);
 
 			// Sort by publish date (newest first)
-			uniqueEpisodes.sort((a, b) => b.publishDate.getTime() - a.publishDate.getTime());
+			// Convert to Date objects in case they were deserialized as strings
+			uniqueEpisodes.sort((a, b) => {
+				const dateA = a.publishDate instanceof Date ? a.publishDate : new Date(a.publishDate);
+				const dateB = b.publishDate instanceof Date ? b.publishDate : new Date(b.publishDate);
+				return dateB.getTime() - dateA.getTime();
+			});
 
 			updatedPodcast.episodes = uniqueEpisodes;
 

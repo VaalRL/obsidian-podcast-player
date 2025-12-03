@@ -237,7 +237,10 @@ export class EpisodeManager {
 
 			switch (sortBy) {
 				case 'publishDate':
-					comparison = a.publishDate.getTime() - b.publishDate.getTime();
+					// Convert to Date objects in case they were deserialized as strings
+					const dateA = a.publishDate instanceof Date ? a.publishDate : new Date(a.publishDate);
+					const dateB = b.publishDate instanceof Date ? b.publishDate : new Date(b.publishDate);
+					comparison = dateA.getTime() - dateB.getTime();
 					break;
 
 				case 'duration':

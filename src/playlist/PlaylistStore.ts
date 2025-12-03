@@ -82,6 +82,13 @@ export class PlaylistStore extends MultiFileStore<Playlist[], Playlist> {
 			try {
 				const playlist = await this.loadItem(id, null as any);
 				if (playlist && this.validatePlaylist(playlist)) {
+					// Convert date strings to Date objects
+					if (typeof playlist.createdAt === 'string') {
+						playlist.createdAt = new Date(playlist.createdAt);
+					}
+					if (typeof playlist.updatedAt === 'string') {
+						playlist.updatedAt = new Date(playlist.updatedAt);
+					}
 					playlists.push(playlist);
 				}
 			} catch (error) {

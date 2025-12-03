@@ -24,6 +24,7 @@ import { FeedService, FeedSyncManager } from './src/feed';
 import { PodcastService, EpisodeManager } from './src/podcast';
 import { PlaybackEngine, ProgressTracker, PlayerController } from './src/player';
 import { NoteExporter } from './src/markdown';
+import { CleanupService } from './src/cleanup/CleanupService';
 import { logger } from './src/utils/Logger';
 
 /**
@@ -67,6 +68,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 	// Markdown layer
 	private noteExporter: NoteExporter;
+
+	// Cleanup layer
+	private cleanupService: CleanupService;
 
 	/**
 	 * Plugin lifecycle: Called when the plugin is loaded
@@ -118,21 +122,51 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Initialize markdown layer
 		this.noteExporter = new NoteExporter(this.app.vault);
 
+		// Initialize cleanup layer
+		this.cleanupService = new CleanupService(
+			this.progressStore,
+			this.feedCacheStore,
+			this.imageCacheStore,
+			this.episodeManager,
+			{
+				enabled: true,
+				intervalMs: 24 * 60 * 60 * 1000, // 24 hours
+				completedRetentionDays: 30,
+				inProgressRetentionDays: 90,
+				maxCacheSizeMB: 100
+			}
+		);
+
+		// Start automatic cleanup
+		this.cleanupService.start();
+
 		// Register view types
-		this.registerView(
-			PLAYER_VIEW_TYPE,
-			(leaf) => new PlayerView(leaf, this)
-		);
+		try {
+			this.registerView(
+				PLAYER_VIEW_TYPE,
+				(leaf) => new PlayerView(leaf, this)
+			);
+		} catch (e) {
+			logger.warn(`View ${PLAYER_VIEW_TYPE} might be already registered`, e);
+		}
 
-		this.registerView(
-			PODCAST_SIDEBAR_VIEW_TYPE,
-			(leaf) => new PodcastSidebarView(leaf, this)
-		);
+		try {
+			this.registerView(
+				PODCAST_SIDEBAR_VIEW_TYPE,
+				(leaf) => new PodcastSidebarView(leaf, this)
+			);
+		} catch (e) {
+			logger.warn(`View ${PODCAST_SIDEBAR_VIEW_TYPE} might be already registered`, e);
+		}
 
-		this.registerView(
-			PLAYLIST_QUEUE_VIEW_TYPE,
-			(leaf) => new PlaylistQueueView(leaf, this)
-		);
+		try {
+			this.registerView(
+				PLAYLIST_QUEUE_VIEW_TYPE,
+				(leaf) => new PlaylistQueueView(leaf, this)
+			);
+		} catch (e) {
+			logger.warn(`View ${PLAYLIST_QUEUE_VIEW_TYPE} might be already registered`, e);
+		}
 
 		// Register settings tab
 		this.addSettingTab(new PodcastPlayerSettingTab(this.app, this));
@@ -202,6 +236,11 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Stop player
 		if (this.playerController) {
 			this.playerController.stop();
+		}
+
+		// Stop cleanup service
+		if (this.cleanupService) {
+			this.cleanupService.stop();
 		}
 
 		// Detach all our custom views

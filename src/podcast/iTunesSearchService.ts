@@ -94,31 +94,52 @@ export class iTunesSearchService {
 			// Make request with retry
 			const response = await retryWithBackoff(
 				async () => {
-					const result = await requestUrl({
-						url,
-						method: 'GET',
-						headers: {
-							'User-Agent': 'Obsidian Podcast Player',
-							'Accept': 'application/json',
-						},
-						throw: false,
-					});
+					try {
+						// Try Obsidian requestUrl first (bypasses CORS restrictions in Electron)
+						const result = await requestUrl({
+							url,
+							method: 'GET',
+							headers: {
+								'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+								'Accept': 'application/json',
+							},
+							throw: false,
+						});
 
-					// Check for HTTP errors
-					if (result.status !== 200) {
-						// For client errors (4xx), log and return empty to avoid retry
-						// For server errors (5xx), throw to trigger retry
-						if (result.status >= 400 && result.status < 500) {
-							logger.warn(`iTunes API returned status ${result.status}`);
-							return { status: result.status, json: { resultCount: 0, results: [] } } as any;
+						// Check for HTTP errors
+						if (result.status !== 200) {
+							// For client errors (4xx), log and return empty to avoid retry
+							// For server errors (5xx), throw to trigger retry
+							if (result.status >= 400 && result.status < 500) {
+								logger.warn(`iTunes API returned status ${result.status}`);
+								return { status: result.status, json: { resultCount: 0, results: [] } } as any;
+							}
+							throw new NetworkError(
+								`iTunes API returned status ${result.status}`,
+								url
+							);
 						}
-						throw new NetworkError(
-							`iTunes API returned status ${result.status}`,
-							url
-						);
-					}
 
-					return result;
+						return result;
+					} catch (err) {
+						logger.warn('requestUrl failed, trying native fetch fallback', err);
+
+						// Fallback to native fetch (works if API supports CORS)
+						try {
+							const response = await fetch(url);
+							if (!response.ok) {
+								throw new Error(`Fetch failed with status ${response.status}`);
+							}
+							const json = await response.json();
+							return { status: 200, json };
+						} catch (fetchErr) {
+							logger.error('Native fetch also failed', fetchErr);
+							throw new NetworkError(
+								'Failed to connect to iTunes API via both requestUrl and fetch.',
+								url
+							);
+						}
+					}
 				},
 				{
 					maxRetries: 2,
@@ -144,15 +165,18 @@ export class iTunesSearchService {
 			return results;
 
 		} catch (error) {
+			// Log detailed error information
+			logger.error('iTunes search failed', error);
+
 			if (error instanceof NetworkError) {
-				logger.error('Network error during iTunes search', error);
-				throw error;
+				logger.error('Network error details:', {
+					message: error.message,
+					url: error.url,
+				});
 			}
 
-			const handled = handleError(error, 'Failed to search iTunes API');
-			logger.error('iTunes search failed', handled);
-
 			// Return empty array instead of throwing for better UX
+			// The UI will show "No results found" which is better than an error
 			return [];
 		}
 	}
@@ -191,9 +215,9 @@ export class iTunesSearchService {
 			feedUrl: result.feedUrl,
 			// Prefer higher resolution artwork
 			artworkUrl: result.artworkUrl600 ||
-			           result.artworkUrl100 ||
-			           result.artworkUrl60 ||
-			           result.artworkUrl30,
+				result.artworkUrl100 ||
+				result.artworkUrl60 ||
+				result.artworkUrl30,
 			collectionId: result.collectionId?.toString(),
 			episodeCount: result.trackCount,
 			genres: this.extractGenres(result),
@@ -224,7 +248,7 @@ export class iTunesSearchService {
 		try {
 			const urlObj = new URL(url);
 			return urlObj.hostname.includes('apple.com') ||
-			       urlObj.hostname.includes('itunes.com');
+				urlObj.hostname.includes('itunes.com');
 		} catch {
 			return false;
 		}

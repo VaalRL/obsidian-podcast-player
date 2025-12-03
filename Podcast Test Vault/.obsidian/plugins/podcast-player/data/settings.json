@@ -1,0 +1,13 @@
+{
+  "dataFolderPath": ".obsidian/plugins/podcast-player/data",
+  "defaultPlaybackSettings": {
+    "volume": 1,
+    "playbackSpeed": 1.15,
+    "skipIntroSeconds": 0,
+    "skipOutroSeconds": 0
+  },
+  "autoDownload": false,
+  "maxCacheEpisodes": 50,
+  "feedUpdateInterval": 60,
+  "enableNotifications": true
+}

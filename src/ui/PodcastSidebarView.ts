@@ -7,14 +7,16 @@
  * - Quick playback controls
  */
 
-import { ItemView, WorkspaceLeaf, Menu, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Podcast, Episode, Playlist } from '../model';
+import { EpisodeStatistics } from '../podcast/EpisodeManager';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
 import { SubscribePodcastModal } from './SubscribePodcastModal';
 import { PodcastSettingsModal } from './PodcastSettingsModal';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
+import { TextInputModal } from './TextInputModal';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 
@@ -28,10 +30,13 @@ export class PodcastSidebarView extends ItemView {
 	private selectedPodcast: Podcast | null = null;
 	private selectedPlaylist: Playlist | null = null;
 	private searchQuery: string = '';
-	private podcastSortBy: 'title' | 'author' | 'date' = 'title';
+	private podcastSortBy: 'title' | 'author' | 'date' | 'count' | 'unplayed' = 'title';
 	private episodeSortBy: 'title' | 'date' | 'duration' = 'date';
 	private playlistSortBy: 'name' | 'date' | 'count' = 'date';
-	private sortDirection: 'asc' | 'desc' = 'asc';
+	private podcastSortDirection: 'asc' | 'desc' = 'asc';
+	private episodeSortDirection: 'asc' | 'desc' = 'desc';
+	private playlistSortDirection: 'asc' | 'desc' = 'asc';
+	private podcastStats: Map<string, EpisodeStatistics> = new Map();
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -88,11 +93,8 @@ export class PodcastSidebarView extends ItemView {
 		// Header with actions
 		this.renderHeader();
 
-		// Search box
+		// Search box (includes sort button)
 		this.renderSearchBox();
-
-		// Sort options
-		this.renderSortOptions();
 
 		// Render content based on current view
 		if (this.selectedPodcast) {
@@ -113,8 +115,8 @@ export class PodcastSidebarView extends ItemView {
 		const searchContainer = this.sidebarContentEl.createDiv({ cls: 'sidebar-search-container' });
 
 		const placeholder = this.selectedPodcast ? 'Search episodes...' :
-		                    this.selectedPlaylist ? 'Search playlist episodes...' :
-		                    this.viewMode === 'podcasts' ? 'Search podcasts...' : 'Search playlists...';
+			this.selectedPlaylist ? 'Search playlist episodes...' :
+				this.viewMode === 'podcasts' ? 'Search podcasts...' : 'Search playlists...';
 
 		const searchInput = searchContainer.createEl('input', {
 			type: 'text',
@@ -123,10 +125,31 @@ export class PodcastSidebarView extends ItemView {
 			value: this.searchQuery
 		});
 
-		// Handle search input
-		searchInput.addEventListener('input', (e) => {
-			this.searchQuery = (e.target as HTMLInputElement).value;
+		const searchBtn = searchContainer.createEl('button', {
+			cls: 'sidebar-search-button',
+			attr: { 'aria-label': 'Search' }
+		});
+		setIcon(searchBtn, 'search');
+
+		const performSearch = () => {
+			console.log('Performing search with query:', searchInput.value);
+			this.searchQuery = searchInput.value;
 			this.render();
+		};
+
+		// Handle search button click
+		searchBtn.addEventListener('click', (e) => {
+			console.log('Search button clicked');
+			performSearch();
+		});
+
+		// Handle Enter key
+		searchInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				e.preventDefault(); // Prevent default form submission if any
+				console.log('Enter key pressed');
+				performSearch();
+			}
 		});
 
 		// Clear button (if there's a search query)
@@ -135,100 +158,109 @@ export class PodcastSidebarView extends ItemView {
 				cls: 'sidebar-search-clear',
 				attr: { 'aria-label': 'Clear search' }
 			});
-			clearBtn.innerHTML = '✕';
+			setIcon(clearBtn, 'x');
 			clearBtn.addEventListener('click', () => {
+				console.log('Clear search clicked');
 				this.searchQuery = '';
 				this.render();
 			});
 		}
-	}
 
-	/**
-	 * Render the sort options
-	 */
-	private renderSortOptions(): void {
-		const sortContainer = this.sidebarContentEl.createDiv({ cls: 'sidebar-sort-container' });
+		// Sort button (added to search container)
+		// Determine current context
+		let currentDirection: 'asc' | 'desc' = 'asc';
+		let currentSortBy = '';
 
-		// Sort by dropdown
-		const sortByLabel = sortContainer.createSpan({ text: 'Sort: ', cls: 'sort-label' });
-
-		const sortBySelect = sortContainer.createEl('select', { cls: 'sort-select' });
-
-		if (this.selectedPodcast) {
-			// Episode sort options
-			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
-			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
-			const durationOption = sortBySelect.createEl('option', { value: 'duration', text: 'Duration' });
-
-			sortBySelect.value = this.episodeSortBy;
-
-			sortBySelect.addEventListener('change', (e) => {
-				this.episodeSortBy = (e.target as HTMLSelectElement).value as 'title' | 'date' | 'duration';
-				this.render();
-			});
-		} else if (this.selectedPlaylist) {
-			// Playlist episode sort options (similar to episode sort)
-			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
-			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
-			const durationOption = sortBySelect.createEl('option', { value: 'duration', text: 'Duration' });
-
-			sortBySelect.value = this.episodeSortBy;
-
-			sortBySelect.addEventListener('change', (e) => {
-				this.episodeSortBy = (e.target as HTMLSelectElement).value as 'title' | 'date' | 'duration';
-				this.render();
-			});
+		if (this.selectedPodcast || this.selectedPlaylist) {
+			currentDirection = this.episodeSortDirection;
+			currentSortBy = this.episodeSortBy;
 		} else if (this.viewMode === 'playlists') {
-			// Playlist sort options
-			const nameOption = sortBySelect.createEl('option', { value: 'name', text: 'Name' });
-			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
-			const countOption = sortBySelect.createEl('option', { value: 'count', text: 'Episode Count' });
-
-			sortBySelect.value = this.playlistSortBy;
-
-			sortBySelect.addEventListener('change', (e) => {
-				this.playlistSortBy = (e.target as HTMLSelectElement).value as 'name' | 'date' | 'count';
-				this.render();
-			});
+			currentDirection = this.playlistSortDirection;
+			currentSortBy = this.playlistSortBy;
 		} else {
-			// Podcast sort options
-			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
-			const authorOption = sortBySelect.createEl('option', { value: 'author', text: 'Author' });
-			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Subscribed Date' });
-
-			sortBySelect.value = this.podcastSortBy;
-
-			sortBySelect.addEventListener('change', (e) => {
-				this.podcastSortBy = (e.target as HTMLSelectElement).value as 'title' | 'author' | 'date';
-				this.render();
-			});
+			currentDirection = this.podcastSortDirection;
+			currentSortBy = this.podcastSortBy;
 		}
 
-		// Sort direction toggle
-		const directionBtn = sortContainer.createEl('button', {
+		// Sort button (Icon only)
+		const sortBtn = searchContainer.createEl('button', {
 			cls: 'sort-direction-button',
-			attr: { 'aria-label': 'Toggle sort direction' }
+			attr: { 'aria-label': 'Sort options' }
 		});
-		directionBtn.innerHTML = this.sortDirection === 'asc' ? '↑' : '↓';
-		directionBtn.addEventListener('click', () => {
-			this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-			this.render();
+		setIcon(sortBtn, currentDirection === 'asc' ? 'arrow-up' : 'arrow-down');
+
+		sortBtn.addEventListener('click', (event) => {
+			const menu = new Menu();
+
+			menu.addItem((item) => item.setIsLabel(true).setTitle('Sort by'));
+
+			if (this.selectedPodcast || this.selectedPlaylist) {
+				// Episode sort options
+				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.episodeSortBy = 'title'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Date').setChecked(currentSortBy === 'date').onClick(() => { this.episodeSortBy = 'date'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Duration').setChecked(currentSortBy === 'duration').onClick(() => { this.episodeSortBy = 'duration'; this.render(); }));
+			} else if (this.viewMode === 'playlists') {
+				// Playlist sort options
+				menu.addItem((item) => item.setTitle('Name').setChecked(currentSortBy === 'name').onClick(() => { this.playlistSortBy = 'name'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Date').setChecked(currentSortBy === 'date').onClick(() => { this.playlistSortBy = 'date'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Episode Count').setChecked(currentSortBy === 'count').onClick(() => { this.playlistSortBy = 'count'; this.render(); }));
+			} else {
+				// Podcast sort options
+				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.podcastSortBy = 'title'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Author').setChecked(currentSortBy === 'author').onClick(() => { this.podcastSortBy = 'author'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Subscribed Date').setChecked(currentSortBy === 'date').onClick(() => { this.podcastSortBy = 'date'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Total Episodes').setChecked(currentSortBy === 'count').onClick(() => { this.podcastSortBy = 'count'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Unplayed Count').setChecked(currentSortBy === 'unplayed').onClick(() => { this.podcastSortBy = 'unplayed'; this.render(); }));
+			}
+
+			menu.addSeparator();
+			menu.addItem((item) => item.setIsLabel(true).setTitle('Order'));
+
+			menu.addItem((item) => item
+				.setTitle('Ascending')
+				.setChecked(currentDirection === 'asc')
+				.onClick(() => this.setSortDirection('asc')));
+
+			menu.addItem((item) => item
+				.setTitle('Descending')
+				.setChecked(currentDirection === 'desc')
+				.onClick(() => this.setSortDirection('desc')));
+
+			menu.showAtMouseEvent(event);
 		});
 	}
+
+
+
+	private setSortDirection(dir: 'asc' | 'desc'): void {
+		if (this.selectedPodcast || this.selectedPlaylist) {
+			this.episodeSortDirection = dir;
+		} else if (this.viewMode === 'playlists') {
+			this.playlistSortDirection = dir;
+		} else {
+			this.podcastSortDirection = dir;
+		}
+		this.render();
+	}
+
+
+
 
 	/**
 	 * Render the header with action buttons
 	 */
 	private renderHeader(): void {
+		// Header container with title and actions
 		const header = this.sidebarContentEl.createDiv({ cls: 'sidebar-header' });
 
-		// Back button (if viewing details)
+		// Back button (if viewing details) - now inside header
 		if (this.selectedPodcast || this.selectedPlaylist) {
 			const backBtn = header.createEl('button', {
 				cls: 'sidebar-back-button',
 				attr: { 'aria-label': 'Back to list' }
 			});
-			backBtn.innerHTML = '← Back';
+			setIcon(backBtn, 'arrow-left');
+			backBtn.createSpan({ text: ' Back' });
 			backBtn.addEventListener('click', () => {
 				this.selectedPodcast = null;
 				this.selectedPlaylist = null;
@@ -248,9 +280,48 @@ export class PodcastSidebarView extends ItemView {
 
 		header.createEl('h2', { text: title, cls: 'sidebar-title' });
 
-		// Mode toggle (only if not viewing details)
+		// Action buttons
+		const actions = header.createDiv({ cls: 'sidebar-actions' });
+
 		if (!this.selectedPodcast && !this.selectedPlaylist) {
-			const modeToggle = header.createDiv({ cls: 'sidebar-mode-toggle' });
+			if (this.viewMode === 'podcasts') {
+				// Add podcast button
+				const addBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': 'Subscribe to podcast' }
+				});
+				setIcon(addBtn, 'plus');
+				addBtn.addEventListener('click', () => this.handleAddPodcast());
+
+				// Refresh button
+				const refreshBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': 'Refresh feeds' }
+				});
+				setIcon(refreshBtn, 'refresh-cw');
+				refreshBtn.addEventListener('click', () => this.handleRefreshFeeds());
+			} else {
+				// Create playlist button
+				const addBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': 'Create playlist' }
+				});
+				setIcon(addBtn, 'plus');
+				addBtn.addEventListener('click', () => this.handleCreatePlaylist());
+			}
+		} else if (this.selectedPodcast) {
+			// Settings button (for selected podcast)
+			const settingsBtn = actions.createEl('button', {
+				cls: 'sidebar-action-button',
+				attr: { 'aria-label': 'Podcast settings' }
+			});
+			setIcon(settingsBtn, 'settings');
+			settingsBtn.addEventListener('click', () => this.handlePodcastSettings());
+		}
+
+		// Mode toggle (only if not viewing details) - separate row below header
+		if (!this.selectedPodcast && !this.selectedPlaylist) {
+			const modeToggle = this.sidebarContentEl.createDiv({ cls: 'sidebar-mode-toggle' });
 
 			const podcastsBtn = modeToggle.createEl('button', {
 				text: 'Podcasts',
@@ -270,45 +341,6 @@ export class PodcastSidebarView extends ItemView {
 				this.render();
 			});
 		}
-
-		// Action buttons
-		const actions = header.createDiv({ cls: 'sidebar-actions' });
-
-		if (!this.selectedPodcast && !this.selectedPlaylist) {
-			if (this.viewMode === 'podcasts') {
-				// Add podcast button
-				const addBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
-					attr: { 'aria-label': 'Subscribe to podcast' }
-				});
-				addBtn.innerHTML = '➕';
-				addBtn.addEventListener('click', () => this.handleAddPodcast());
-
-				// Refresh button
-				const refreshBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
-					attr: { 'aria-label': 'Refresh feeds' }
-				});
-				refreshBtn.innerHTML = '🔄';
-				refreshBtn.addEventListener('click', () => this.handleRefreshFeeds());
-			} else {
-				// Create playlist button
-				const addBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
-					attr: { 'aria-label': 'Create playlist' }
-				});
-				addBtn.innerHTML = '➕';
-				addBtn.addEventListener('click', () => this.handleCreatePlaylist());
-			}
-		} else if (this.selectedPodcast) {
-			// Settings button (for selected podcast)
-			const settingsBtn = actions.createEl('button', {
-				cls: 'sidebar-action-button',
-				attr: { 'aria-label': 'Podcast settings' }
-			});
-			settingsBtn.innerHTML = '⚙️';
-			settingsBtn.addEventListener('click', () => this.handlePodcastSettings());
-		}
 	}
 
 	/**
@@ -320,13 +352,16 @@ export class PodcastSidebarView extends ItemView {
 		// Load podcasts from store
 		let podcasts = await this.loadPodcasts();
 
+		// Load statistics for sorting
+		await this.loadPodcastStats(podcasts);
+
 		// Filter podcasts based on search query
 		if (this.searchQuery) {
 			podcasts = this.filterPodcasts(podcasts, this.searchQuery);
 		}
 
 		// Sort podcasts
-		podcasts = this.sortPodcasts(podcasts, this.podcastSortBy, this.sortDirection);
+		podcasts = this.sortPodcasts(podcasts, this.podcastSortBy, this.podcastSortDirection);
 
 		if (podcasts.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
@@ -369,7 +404,7 @@ export class PodcastSidebarView extends ItemView {
 			});
 		} else {
 			const placeholder = item.createDiv({ cls: 'podcast-image-placeholder' });
-			placeholder.innerHTML = '🎙️';
+			setIcon(placeholder, 'mic');
 		}
 
 		// Podcast info
@@ -377,16 +412,33 @@ export class PodcastSidebarView extends ItemView {
 		info.createEl('h3', { text: podcast.title, cls: 'podcast-title' });
 		info.createEl('p', { text: podcast.author, cls: 'podcast-author' });
 
-		// Episode count
-		const episodeCount = podcast.episodes?.length || 0;
-		info.createSpan({
-			text: `${episodeCount} episodes`,
-			cls: 'podcast-episode-count'
-		});
+		// Stats
+		const stats = this.podcastStats.get(podcast.id);
+		if (stats) {
+			const statsText = [];
+			statsText.push(`${stats.totalEpisodes} eps`);
+			if (stats.unplayedEpisodes > 0) {
+				statsText.push(`${stats.unplayedEpisodes} new`);
+			}
+
+			info.createDiv({
+				text: statsText.join(' • '),
+				cls: 'podcast-episode-count'
+			});
+		} else {
+			const episodeCount = podcast.episodes?.length || 0;
+			info.createDiv({
+				text: `${episodeCount} episodes`,
+				cls: 'podcast-episode-count'
+			});
+		}
 
 		// Click to view episodes
 		item.addEventListener('click', () => {
 			this.selectedPodcast = podcast;
+			// Reset sort to Newest First (Date Descending)
+			this.episodeSortBy = 'date';
+			this.episodeSortDirection = 'desc';
 			this.render();
 		});
 
@@ -413,7 +465,7 @@ export class PodcastSidebarView extends ItemView {
 		}
 
 		// Sort episodes
-		episodes = this.sortEpisodes(episodes, this.episodeSortBy, this.sortDirection);
+		episodes = this.sortEpisodes(episodes, this.episodeSortBy, this.episodeSortDirection);
 
 		if (episodes.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
@@ -467,15 +519,29 @@ export class PodcastSidebarView extends ItemView {
 			});
 		}
 
+		// Actions container
+		const actions = item.createDiv({ cls: 'episode-item-actions' });
+
 		// Play button
-		const playBtn = item.createEl('button', {
-			cls: 'episode-play-button',
-			attr: { 'aria-label': 'Play episode' }
+		const playBtn = actions.createEl('button', {
+			cls: 'episode-action-button',
+			attr: { 'aria-label': 'Play' }
 		});
-		playBtn.innerHTML = '▶️';
+		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.handlePlayEpisode(episode);
+			this.handlePlayEpisode(episode, true);
+		});
+
+		// Add button
+		const addBtn = actions.createEl('button', {
+			cls: 'episode-action-button',
+			attr: { 'aria-label': 'Add to playlist' }
+		});
+		setIcon(addBtn, 'plus');
+		addBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.showAddToPlaylistMenu(episode, e);
 		});
 
 		// Click to show episode details
@@ -559,11 +625,89 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	/**
+	 * Show add to playlist menu
+	 */
+	private async showAddToPlaylistMenu(episode: Episode, event: MouseEvent): Promise<void> {
+		const menu = new Menu();
+		const playlistManager = this.plugin.getPlaylistManager();
+		const queueManager = this.plugin.getQueueManager();
+
+		// Add to Queue option
+		menu.addItem((item) =>
+			item
+				.setTitle('Add to Queue')
+				.setIcon('list-plus')
+				.onClick(async () => {
+					try {
+						let queue = await queueManager.getCurrentQueue();
+						if (!queue) {
+							const queues = await queueManager.getAllQueues();
+							if (queues.length > 0) queue = queues[0];
+							else queue = await queueManager.createQueue('Default Queue');
+						}
+						await queueManager.addEpisode(queue.id, episode.id);
+						new Notice('Added to queue');
+					} catch (e) {
+						console.error(e);
+						new Notice('Failed to add to queue');
+					}
+				})
+		);
+
+		menu.addSeparator();
+
+		// Add to Playlists
+		const playlists = await playlistManager.getAllPlaylists();
+		if (playlists.length === 0) {
+			menu.addItem((item) => item.setTitle('No playlists').setDisabled(true));
+		} else {
+			playlists.forEach(playlist => {
+				menu.addItem((item) =>
+					item
+						.setTitle(playlist.name)
+						.setIcon('list')
+						.onClick(async () => {
+							try {
+								await playlistManager.addEpisode(playlist.id, episode.id);
+								new Notice(`Added to playlist: ${playlist.name}`);
+							} catch (e) {
+								console.error(e);
+								new Notice('Failed to add to playlist');
+							}
+						})
+				);
+			});
+		}
+
+		menu.showAtMouseEvent(event);
+	}
+
+	/**
 	 * Handle play episode button click
 	 */
-	private async handlePlayEpisode(episode: Episode): Promise<void> {
+	private async handlePlayEpisode(episode: Episode, addToQueue = false): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
+
+			if (addToQueue) {
+				const queueManager = this.plugin.getQueueManager();
+				// Get or create default queue
+				let queue = await queueManager.getCurrentQueue();
+				if (!queue) {
+					const queues = await queueManager.getAllQueues();
+					if (queues.length > 0) {
+						queue = queues[0];
+					} else {
+						queue = await queueManager.createQueue('Default Queue');
+					}
+					queueManager.setCurrentQueue(queue.id);
+				}
+
+				// Add to front (insert at 0)
+				await queueManager.insertEpisode(queue.id, episode.id, 0);
+				// Update current index to 0 so the queue continues from here
+				await queueManager.jumpTo(queue.id, 0);
+			}
 
 			// Load the episode into the player with autoPlay = true
 			await playerController.loadEpisode(episode, true, true);
@@ -764,6 +908,19 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	/**
+	 * Load statistics for podcasts
+	 */
+	private async loadPodcastStats(podcasts: Podcast[]): Promise<void> {
+		const episodeManager = this.plugin.getEpisodeManager();
+		for (const podcast of podcasts) {
+			if (!this.podcastStats.has(podcast.id)) {
+				const stats = await episodeManager.getPodcastStatistics(podcast.id);
+				this.podcastStats.set(podcast.id, stats);
+			}
+		}
+	}
+
+	/**
 	 * Filter podcasts based on search query
 	 */
 	private filterPodcasts(podcasts: Podcast[], query: string): Podcast[] {
@@ -808,7 +965,7 @@ export class PodcastSidebarView extends ItemView {
 	 */
 	private sortPodcasts(
 		podcasts: Podcast[],
-		sortBy: 'title' | 'author' | 'date',
+		sortBy: 'title' | 'author' | 'date' | 'count' | 'unplayed',
 		direction: 'asc' | 'desc'
 	): Podcast[] {
 		const sorted = [...podcasts].sort((a, b) => {
@@ -825,6 +982,16 @@ export class PodcastSidebarView extends ItemView {
 					const aDate = new Date(a.subscribedAt).getTime();
 					const bDate = new Date(b.subscribedAt).getTime();
 					comparison = aDate - bDate;
+					break;
+				case 'count':
+					const aCount = this.podcastStats.get(a.id)?.totalEpisodes || 0;
+					const bCount = this.podcastStats.get(b.id)?.totalEpisodes || 0;
+					comparison = aCount - bCount;
+					break;
+				case 'unplayed':
+					const aUnplayed = this.podcastStats.get(a.id)?.unplayedEpisodes || 0;
+					const bUnplayed = this.podcastStats.get(b.id)?.unplayedEpisodes || 0;
+					comparison = aUnplayed - bUnplayed;
 					break;
 			}
 
@@ -880,7 +1047,7 @@ export class PodcastSidebarView extends ItemView {
 		}
 
 		// Sort playlists
-		playlists = this.sortPlaylists(playlists, this.playlistSortBy, this.sortDirection);
+		playlists = this.sortPlaylists(playlists, this.playlistSortBy, this.playlistSortDirection);
 
 		if (playlists.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
@@ -1010,7 +1177,7 @@ export class PodcastSidebarView extends ItemView {
 			cls: 'playlist-episode-play',
 			attr: { 'aria-label': 'Play episode' }
 		});
-		playBtn.innerHTML = '▶️';
+		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			this.handlePlayEpisode(episode);
@@ -1235,9 +1402,14 @@ export class PodcastSidebarView extends ItemView {
 	 */
 	private async promptForInput(title: string, message: string, defaultValue?: string): Promise<string | null> {
 		return new Promise((resolve) => {
-			// Simple prompt using browser's prompt (can be replaced with a custom modal later)
-			const result = prompt(message, defaultValue || '');
-			resolve(result);
+			const modal = new TextInputModal(
+				this.app,
+				title,
+				message,
+				defaultValue || '',
+				(result) => resolve(result)
+			);
+			modal.open();
 		});
 	}
 

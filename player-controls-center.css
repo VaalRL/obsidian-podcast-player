@@ -1,0 +1,69 @@
+/* ==========================================================================
+   Player View Layout Fix - Smaller Centered Playback Controls
+   ========================================================================== */
+
+.playback-controls-section {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    /* Reduced gap */
+    padding: var(--size-4-3) 0 !important;
+    /* Reduced padding */
+    margin: var(--size-4-2) 0 !important;
+    /* Reduced margin */
+}
+
+.player-button {
+    background: var(--background-secondary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    /* Reduced from 48px */
+    height: 36px !important;
+    /* Reduced from 48px */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    color: var(--text-normal) !important;
+}
+
+.player-button:hover {
+    background: var(--background-modifier-hover) !important;
+    transform: scale(1.05) !important;
+}
+
+.player-button-play-pause {
+    width: 48px !important;
+    /* Reduced from 64px */
+    height: 48px !important;
+    /* Reduced from 64px */
+    background: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
+.player-button-play-pause:hover {
+    background: var(--interactive-accent-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.player-button svg {
+    width: 16px !important;
+    /* Reduced from 20px */
+    height: 16px !important;
+    /* Reduced from 20px */
+}
+
+.player-button-play-pause svg {
+    width: 22px !important;
+    /* Reduced from 28px */
+    height: 22px !important;
+    /* Reduced from 28px */
+}
+
+/* Hide queue controls section since we removed shuffle and repeat */
+.queue-controls {
+    display: none !important;
+}

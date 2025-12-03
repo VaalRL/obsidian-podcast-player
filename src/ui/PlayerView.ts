@@ -5,7 +5,7 @@
  * Displays current episode, playback controls, and progress.
  */
 
-import { ItemView, WorkspaceLeaf } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { PlaybackState, Queue, Episode } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
@@ -101,6 +101,13 @@ export class PlayerView extends ItemView {
 	private renderEpisodeInfo(container: HTMLElement): void {
 		const infoSection = container.createDiv({ cls: 'episode-info-section' });
 
+		// Podcast thumbnail
+		const thumbnail = infoSection.createEl('img', {
+			cls: 'player-podcast-thumbnail',
+			attr: { src: '', alt: 'Podcast Artwork' }
+		});
+		thumbnail.style.display = 'none';
+
 		// Placeholder for now - will integrate with PlayerController later
 		const title = infoSection.createEl('h3', {
 			text: 'No episode playing',
@@ -127,7 +134,7 @@ export class PlayerView extends ItemView {
 			cls: 'player-button player-button-prev',
 			attr: { 'aria-label': 'Previous episode' }
 		});
-		prevBtn.innerHTML = '⏮';
+		setIcon(prevBtn, 'skip-back');
 		prevBtn.addEventListener('click', () => this.handlePrevious());
 
 		// Skip backward button
@@ -135,7 +142,7 @@ export class PlayerView extends ItemView {
 			cls: 'player-button player-button-skip-back',
 			attr: { 'aria-label': 'Skip backward 15s' }
 		});
-		skipBackBtn.innerHTML = '⏪';
+		setIcon(skipBackBtn, 'rewind');
 		skipBackBtn.addEventListener('click', () => this.handleSkipBackward());
 
 		// Play/Pause button
@@ -143,7 +150,7 @@ export class PlayerView extends ItemView {
 			cls: 'player-button player-button-play-pause',
 			attr: { 'aria-label': 'Play/Pause' }
 		});
-		playPauseBtn.innerHTML = '▶️';
+		setIcon(playPauseBtn, 'play');
 		playPauseBtn.addEventListener('click', () => this.handlePlayPause());
 
 		// Skip forward button
@@ -151,7 +158,7 @@ export class PlayerView extends ItemView {
 			cls: 'player-button player-button-skip-forward',
 			attr: { 'aria-label': 'Skip forward 30s' }
 		});
-		skipForwardBtn.innerHTML = '⏩';
+		setIcon(skipForwardBtn, 'fast-forward');
 		skipForwardBtn.addEventListener('click', () => this.handleSkipForward());
 
 		// Next button
@@ -159,7 +166,7 @@ export class PlayerView extends ItemView {
 			cls: 'player-button player-button-next',
 			attr: { 'aria-label': 'Next episode' }
 		});
-		nextBtn.innerHTML = '⏭';
+		setIcon(nextBtn, 'skip-forward');
 		nextBtn.addEventListener('click', () => this.handleNext());
 	}
 
@@ -193,7 +200,8 @@ export class PlayerView extends ItemView {
 
 		// Volume control
 		const volumeControl = advancedSection.createDiv({ cls: 'volume-control' });
-		volumeControl.createSpan({ text: '🔊', cls: 'volume-icon' });
+		const volIcon = volumeControl.createSpan({ cls: 'volume-icon' });
+		setIcon(volIcon, 'volume-2');
 		const volumeSlider = volumeControl.createEl('input', {
 			type: 'range',
 			cls: 'volume-slider',
@@ -222,9 +230,20 @@ export class PlayerView extends ItemView {
 	 * Handle play/pause button click
 	 */
 	private async handlePlayPause(): Promise<void> {
+		console.log('PlayerView: Play/Pause clicked');
 		try {
+			if (!this.plugin) {
+				console.error('PlayerView: Plugin instance is missing');
+				return;
+			}
+			if (!this.plugin.playerController) {
+				console.error('PlayerView: PlayerController is missing');
+				return;
+			}
+
 			const playerController = this.plugin.playerController;
 			const state = playerController.getState();
+			console.log('PlayerView: Current state', state);
 
 			if (state.status === 'playing') {
 				await playerController.pause();
@@ -415,21 +434,42 @@ export class PlayerView extends ItemView {
 			const titleEl = this.playerContentEl.querySelector('.episode-title') as HTMLElement;
 			const podcastEl = this.playerContentEl.querySelector('.podcast-name') as HTMLElement;
 			const durationEl = this.playerContentEl.querySelector('.episode-duration') as HTMLElement;
+			const thumbnailEl = this.playerContentEl.querySelector('.player-podcast-thumbnail') as HTMLImageElement;
 
 			if (state.currentEpisode) {
 				if (titleEl) titleEl.textContent = state.currentEpisode.title;
-				if (podcastEl) podcastEl.textContent = 'Playing...';
 				if (durationEl) durationEl.textContent = this.formatTime(state.currentEpisode.duration);
+
+				// Update thumbnail and podcast title
+				const podcastId = state.currentEpisode.podcastId;
+				if (podcastId) {
+					this.plugin.getSubscriptionStore().getPodcast(podcastId).then(podcast => {
+						if (podcast) {
+							if (podcastEl) podcastEl.textContent = podcast.title;
+							if (thumbnailEl && podcast.imageUrl) {
+								thumbnailEl.src = podcast.imageUrl;
+								thumbnailEl.style.display = 'block';
+							} else if (thumbnailEl) {
+								thumbnailEl.style.display = 'none';
+							}
+						}
+					});
+				} else {
+					if (podcastEl) podcastEl.textContent = 'Unknown Podcast';
+					if (thumbnailEl) thumbnailEl.style.display = 'none';
+				}
 			} else {
 				if (titleEl) titleEl.textContent = 'No episode playing';
 				if (podcastEl) podcastEl.textContent = 'Select a podcast to start';
 				if (durationEl) durationEl.textContent = '--:--';
+				if (thumbnailEl) thumbnailEl.style.display = 'none';
 			}
 
 			// Update play/pause button
+			// Update play/pause button
 			const playPauseBtn = this.playerContentEl.querySelector('.player-button-play-pause') as HTMLElement;
 			if (playPauseBtn) {
-				playPauseBtn.innerHTML = state.status === 'playing' ? '⏸' : '▶️';
+				setIcon(playPauseBtn, state.status === 'playing' ? 'pause' : 'play');
 			}
 
 			// Update time display
@@ -503,43 +543,7 @@ export class PlayerView extends ItemView {
 				return;
 			}
 
-			// Queue controls
-			const controls = queueSection.createDiv({ cls: 'queue-controls' });
-
-			// Shuffle button
-			const shuffleBtn = controls.createEl('button', {
-				text: `Shuffle: ${queue.shuffle ? 'On' : 'Off'}`,
-				cls: `queue-control-btn ${queue.shuffle ? 'active' : ''}`
-			});
-			shuffleBtn.addEventListener('click', async () => {
-				try {
-					const queueManager = this.plugin.getQueueManager();
-					await queueManager.toggleShuffle(queue.id);
-					await this.renderPlayer();
-				} catch (error) {
-					console.error('Failed to toggle shuffle:', error);
-				}
-			});
-
-			// Repeat button
-			const repeatBtn = controls.createEl('button', {
-				text: `Repeat: ${this.formatRepeatMode(queue.repeat)}`,
-				cls: `queue-control-btn ${queue.repeat !== 'none' ? 'active' : ''}`
-			});
-			repeatBtn.addEventListener('click', async () => {
-				try {
-					const queueManager = this.plugin.getQueueManager();
-					const modes: Array<'none' | 'one' | 'all'> = ['none', 'one', 'all'];
-					const currentIndex = modes.indexOf(queue.repeat);
-					const nextMode = modes[(currentIndex + 1) % modes.length];
-					await queueManager.setRepeat(queue.id, nextMode);
-					await this.renderPlayer();
-				} catch (error) {
-					console.error('Failed to change repeat mode:', error);
-				}
-			});
-
-			// Episode list
+			// Episode list (removed shuffle and repeat controls)
 			await this.renderQueueEpisodeList(queueSection, queue);
 
 		} catch (error) {
@@ -645,7 +649,8 @@ export class PlayerView extends ItemView {
 		const indexEl = item.createDiv({ cls: 'queue-episode-index' });
 		indexEl.textContent = `${index + 1}`;
 		if (isCurrent) {
-			indexEl.innerHTML = '▶';
+			indexEl.empty();
+			setIcon(indexEl, 'play');
 		}
 
 		// Info

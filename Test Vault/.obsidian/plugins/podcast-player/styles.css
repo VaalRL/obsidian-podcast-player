@@ -424,3 +424,573 @@
 	padding: var(--size-4-4);
 	color: var(--text-error);
 }
+/* ==========================================================================
+   Episode Item Layout Fix - Ensures buttons appear on the right side
+   ========================================================================== */
+
+.episode-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-2) !important;
+    border-radius: var(--radius-s) !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.episode-item:hover {
+    background-color: var(--background-modifier-hover) !important;
+}
+
+.episode-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+}
+
+.episode-metadata {
+    display: flex !important;
+    gap: var(--size-4-1) !important;
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+.episode-item-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-1) !important;
+    flex-shrink: 0 !important;
+}
+/* ==========================================================================
+   Podcast Item Layout (Feed List)
+   ========================================================================== */
+
+.podcast-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-2) !important;
+    border-radius: var(--radius-s) !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.podcast-item:hover {
+    background-color: var(--background-modifier-hover) !important;
+}
+
+.podcast-image {
+    width: 50px !important;
+    height: 50px !important;
+    object-fit: cover !important;
+    border-radius: var(--radius-s) !important;
+    flex-shrink: 0 !important;
+}
+
+.podcast-image-placeholder {
+    width: 50px !important;
+    height: 50px !important;
+    background-color: var(--background-secondary) !important;
+    border-radius: var(--radius-s) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.podcast-image-placeholder svg {
+    width: 24px !important;
+    height: 24px !important;
+    color: var(--text-muted) !important;
+}
+
+.podcast-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+}
+
+.podcast-title {
+    font-weight: 600 !important;
+    margin: 0 !important;
+    font-size: var(--font-ui-medium) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.podcast-author {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.podcast-episode-count {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+/* Player View Thumbnail */
+.player-podcast-thumbnail {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-m);
+    object-fit: cover;
+    margin-bottom: var(--size-4-2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.episode-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Episode Detail Modal */
+.episode-detail-modal-container {
+    width: 800px !important;
+    max-width: 90vw !important;
+}
+/* ==========================================================================
+   Sidebar Header Layout
+   ========================================================================== */
+
+.sidebar-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: var(--size-4-2) var(--size-4-3) !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.sidebar-title {
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+}
+
+.sidebar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar-action-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-s) !important;
+    transition: all 0.2s !important;
+}
+
+.sidebar-action-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+
+.sidebar-back-button {
+    margin-bottom: var(--size-4-2) !important;
+}
+/* ==========================================================================
+   Sidebar Search Layout
+   ========================================================================== */
+
+.sidebar-search-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.sidebar-search-input {
+    flex: 1 !important;
+}
+
+.sidebar-search-button {
+    flex-shrink: 0 !important;
+}
+/* ==========================================================================
+   Sidebar Sort Layout
+   ========================================================================== */
+
+.sidebar-sort-container {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.sort-direction-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-s) !important;
+}
+
+.sort-direction-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+/* ==========================================================================
+   Episode Detail Modal Layout
+   ========================================================================== */
+
+.episode-detail-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.episode-detail-header {
+    text-align: center;
+    margin-bottom: var(--size-4-4);
+}
+
+.episode-detail-image {
+    max-width: 200px !important;
+    max-height: 200px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: var(--radius-m) !important;
+    margin: 0 auto var(--size-4-3) auto !important;
+    display: block !important;
+}
+
+.episode-detail-title {
+    margin-top: var(--size-4-2) !important;
+    margin-bottom: 0 !important;
+}
+
+.episode-detail-section {
+    margin-bottom: var(--size-4-4);
+}
+
+.episode-detail-section h3 {
+    margin-top: 0;
+    margin-bottom: var(--size-4-2);
+    font-size: var(--font-ui-medium);
+    font-weight: 600;
+}
+
+.episode-detail-section h4 {
+    margin-top: var(--size-4-3);
+    margin-bottom: var(--size-4-2);
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+}
+
+.episode-detail-row {
+    margin-bottom: var(--size-4-1);
+}
+
+.episode-detail-label {
+    font-weight: 600;
+    margin-right: var(--size-4-1);
+}
+
+.episode-detail-description {
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.episode-detail-progress-container {
+    margin: var(--size-4-2) 0;
+}
+
+.episode-detail-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+    margin-bottom: var(--size-4-1);
+}
+
+.episode-detail-progress-fill {
+    height: 100%;
+    background-color: var(--interactive-accent);
+    transition: width 0.3s ease;
+}
+
+.episode-detail-progress-text {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.episode-detail-completed {
+    color: var(--text-success);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--size-4-1);
+}
+
+.episode-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.episode-detail-actions button {
+    flex: 1;
+    min-width: 120px;
+}
+/* ==========================================================================
+   Episode List Spacing Fix
+   ========================================================================== */
+
+.episode-item {
+    margin-bottom: var(--size-4-1) !important;
+    /* Reduced spacing between episodes */
+    padding: var(--size-4-2) !important;
+}
+
+/* Also ensure the list container doesn't add extra gap if it's a flex container */
+.episode-list-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+    /* Reduced gap */
+}
+/* ==========================================================================
+   Episode List Compact Spacing Fix (Retry)
+   ========================================================================== */
+
+.episode-item {
+    margin-bottom: var(--size-4-1) !important;
+    padding: var(--size-4-1) !important;
+    /* Reduced padding from size-4-2 to size-4-1 */
+    gap: var(--size-4-1) !important;
+    /* Reduce internal gap between elements */
+}
+
+.episode-list-container {
+    gap: 2px !important;
+    /* Even smaller gap between items */
+}
+
+.episode-info h4.episode-title {
+    margin-bottom: 2px !important;
+    /* Tighter title spacing */
+}
+
+.episode-metadata {
+    margin-top: 0 !important;
+}
+
+.episode-item-actions {
+    margin-top: var(--size-4-1) !important;
+    /* Tighter actions spacing */
+}
+/* ==========================================================================
+   Header Layout Fix - Back Button on Same Row as Title
+   ========================================================================== */
+
+.sidebar-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: var(--size-4-2) var(--size-4-3) !important;
+    margin-bottom: var(--size-4-2) !important;
+    gap: var(--size-4-2) !important;
+    /* Add gap between back button and title */
+}
+
+.sidebar-back-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-1) !important;
+    border-radius: var(--radius-s) !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: 0 !important;
+    /* Remove bottom margin since it's now inline */
+    flex-shrink: 0 !important;
+    /* Prevent button from shrinking */
+}
+
+.sidebar-back-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+
+.sidebar-title {
+    flex: 1 !important;
+    /* Allow title to take remaining space */
+    margin: 0 !important;
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.sidebar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    flex-shrink: 0 !important;
+}
+/* ==========================================================================
+   Player View Layout Fix - Center Playback Controls
+   ========================================================================== */
+
+.playback-controls-section {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-4) 0 !important;
+    margin: var(--size-4-3) 0 !important;
+}
+
+.player-button {
+    background: var(--background-secondary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 48px !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    color: var(--text-normal) !important;
+}
+
+.player-button:hover {
+    background: var(--background-modifier-hover) !important;
+    transform: scale(1.05) !important;
+}
+
+.player-button-play-pause {
+    width: 64px !important;
+    height: 64px !important;
+    background: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
+.player-button-play-pause:hover {
+    background: var(--interactive-accent-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.player-button svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.player-button-play-pause svg {
+    width: 28px !important;
+    height: 28px !important;
+}
+
+/* Hide queue controls section since we removed shuffle and repeat */
+.queue-controls {
+    display: none !important;
+}
+/* ==========================================================================
+   Player View Layout Fix - Smaller Centered Playback Controls
+   ========================================================================== */
+
+.playback-controls-section {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    /* Reduced gap */
+    padding: var(--size-4-3) 0 !important;
+    /* Reduced padding */
+    margin: var(--size-4-2) 0 !important;
+    /* Reduced margin */
+}
+
+.player-button {
+    background: var(--background-secondary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    /* Reduced from 48px */
+    height: 36px !important;
+    /* Reduced from 48px */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    color: var(--text-normal) !important;
+}
+
+.player-button:hover {
+    background: var(--background-modifier-hover) !important;
+    transform: scale(1.05) !important;
+}
+
+.player-button-play-pause {
+    width: 48px !important;
+    /* Reduced from 64px */
+    height: 48px !important;
+    /* Reduced from 64px */
+    background: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
+.player-button-play-pause:hover {
+    background: var(--interactive-accent-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.player-button svg {
+    width: 16px !important;
+    /* Reduced from 20px */
+    height: 16px !important;
+    /* Reduced from 20px */
+}
+
+.player-button-play-pause svg {
+    width: 22px !important;
+    /* Reduced from 28px */
+    height: 22px !important;
+    /* Reduced from 28px */
+}
+
+/* Hide queue controls section since we removed shuffle and repeat */
+.queue-controls {
+    display: none !important;
+}

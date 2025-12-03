@@ -13,3 +13,4 @@ export { AddToPlaylistModal } from './AddToPlaylistModal';
 export { SubscribePodcastModal } from './SubscribePodcastModal';
 export { PodcastSettingsModal } from './PodcastSettingsModal';
 export { EpisodeDetailModal } from './EpisodeDetailModal';
+export { TextInputModal } from './TextInputModal';

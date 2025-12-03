@@ -6,7 +6,7 @@
  * - Queues (playback queues)
  */
 
-import { ItemView, WorkspaceLeaf, Menu, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Playlist, Queue, Episode } from '../model';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
@@ -129,7 +129,7 @@ export class PlaylistQueueView extends ItemView {
 				cls: 'pq-search-clear',
 				attr: { 'aria-label': 'Clear search' }
 			});
-			clearBtn.innerHTML = '✕';
+			setIcon(clearBtn, 'x');
 			clearBtn.addEventListener('click', () => {
 				this.searchQuery = '';
 				this.render();
@@ -164,7 +164,7 @@ export class PlaylistQueueView extends ItemView {
 			cls: 'sort-direction-button',
 			attr: { 'aria-label': 'Toggle sort direction' }
 		});
-		directionBtn.innerHTML = this.sortDirection === 'asc' ? '↑' : '↓';
+		setIcon(directionBtn, this.sortDirection === 'asc' ? 'arrow-up' : 'arrow-down');
 		directionBtn.addEventListener('click', () => {
 			this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
 			this.render();
@@ -183,7 +183,8 @@ export class PlaylistQueueView extends ItemView {
 				cls: 'pq-back-button',
 				attr: { 'aria-label': 'Back to list' }
 			});
-			backBtn.innerHTML = '← Back';
+			setIcon(backBtn, 'arrow-left');
+			backBtn.createSpan({ text: ' Back' });
 			backBtn.addEventListener('click', () => {
 				this.selectedPlaylist = null;
 				this.selectedQueue = null;
@@ -235,7 +236,7 @@ export class PlaylistQueueView extends ItemView {
 				cls: 'pq-action-button',
 				attr: { 'aria-label': `Create new ${this.viewMode === 'playlists' ? 'playlist' : 'queue'}` }
 			});
-			addBtn.innerHTML = '➕';
+			setIcon(addBtn, 'plus');
 			addBtn.addEventListener('click', () => this.handleCreate());
 		}
 	}
@@ -517,7 +518,7 @@ export class PlaylistQueueView extends ItemView {
 			cls: 'pq-episode-play',
 			attr: { 'aria-label': 'Play episode' }
 		});
-		playBtn.innerHTML = '▶️';
+		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			this.handlePlayEpisode(episode);
