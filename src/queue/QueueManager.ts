@@ -5,6 +5,7 @@
  * queue control, episode ordering, and playback state management.
  */
 
+import { App } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { Queue } from '../model';
 import { QueueStore } from './QueueStore';
@@ -15,9 +16,11 @@ import { QueueStore } from './QueueStore';
 export class QueueManager {
 	private queueStore: QueueStore;
 	private currentQueueId: string | null = null;
+	private app?: App;
 
-	constructor(queueStore: QueueStore) {
+	constructor(queueStore: QueueStore, app?: App) {
 		this.queueStore = queueStore;
+		this.app = app;
 	}
 
 	/**
@@ -98,6 +101,10 @@ export class QueueManager {
 
 		await this.queueStore.saveQueue(updatedQueue);
 
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', id);
+		}
+
 		logger.methodExit('QueueManager', 'updateQueue');
 	}
 
@@ -156,6 +163,11 @@ export class QueueManager {
 		await this.queueStore.saveQueue(queue);
 
 		logger.info('Episode added to queue', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
 		logger.methodExit('QueueManager', 'addEpisode');
 	}
 
@@ -177,6 +189,11 @@ export class QueueManager {
 		await this.queueStore.saveQueue(queue);
 
 		logger.info(`Added ${episodeIds.length} episodes to queue`);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
 		logger.methodExit('QueueManager', 'addEpisodes');
 	}
 
@@ -199,6 +216,11 @@ export class QueueManager {
 		await this.queueStore.saveQueue(queue);
 
 		logger.info('Episode inserted into queue', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
 		logger.methodExit('QueueManager', 'insertEpisode');
 	}
 
@@ -236,6 +258,11 @@ export class QueueManager {
 		await this.queueStore.saveQueue(queue);
 
 		logger.info('Episode removed from queue', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
 		logger.methodExit('QueueManager', 'removeEpisode');
 	}
 
@@ -258,6 +285,11 @@ export class QueueManager {
 		await this.queueStore.saveQueue(queue);
 
 		logger.info('Queue cleared');
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
 		logger.methodExit('QueueManager', 'clearQueue');
 	}
 
@@ -323,6 +355,89 @@ export class QueueManager {
 		return nextEpisodeId;
 	}
 
+	/**
+	 * Move to next episode and remove the current (played) episode from queue
+	 * This is the queue-style behavior where episodes are consumed as they play
+	 */
+	async nextAndRemovePlayed(queueId: string): Promise<string | null> {
+		logger.methodEntry('QueueManager', 'nextAndRemovePlayed', queueId);
+
+		const queue = await this.queueStore.getQueue(queueId);
+
+		if (!queue || queue.episodeIds.length === 0) {
+			logger.methodExit('QueueManager', 'nextAndRemovePlayed', 'no queue or empty');
+			return null;
+		}
+
+		// Handle repeat one - don't remove, just return current
+		if (queue.repeat === 'one') {
+			logger.methodExit('QueueManager', 'nextAndRemovePlayed', 'repeat one');
+			return queue.episodeIds[queue.currentIndex];
+		}
+
+		// If it's a playlist, don't remove the episode, just advance index
+		if (queue.isPlaylist) {
+			// Advance index
+			queue.currentIndex++;
+
+			// Handle end of playlist
+			if (queue.currentIndex >= queue.episodeIds.length) {
+				if (queue.repeat === 'all') {
+					queue.currentIndex = 0;
+				} else {
+					// End of playlist
+					queue.currentIndex = 0;
+					queue.updatedAt = new Date();
+					await this.queueStore.saveQueue(queue);
+					logger.methodExit('QueueManager', 'nextAndRemovePlayed', 'end of playlist');
+					return null;
+				}
+			}
+
+			queue.updatedAt = new Date();
+			await this.queueStore.saveQueue(queue);
+			return queue.episodeIds[queue.currentIndex];
+		}
+
+		// Remove the current (just played) episode
+		const playedEpisodeId = queue.episodeIds[queue.currentIndex];
+		queue.episodeIds.splice(queue.currentIndex, 1);
+
+		// If queue is now empty, save and return null
+		if (queue.episodeIds.length === 0) {
+			queue.currentIndex = 0;
+			queue.updatedAt = new Date();
+			await this.queueStore.saveQueue(queue);
+			logger.info('Queue is now empty after removing played episode', playedEpisodeId);
+			logger.methodExit('QueueManager', 'nextAndRemovePlayed', 'queue empty');
+			return null;
+		}
+
+		// Adjust currentIndex if needed (since we removed an element)
+		if (queue.currentIndex >= queue.episodeIds.length) {
+			if (queue.repeat === 'all') {
+				queue.currentIndex = 0;
+			} else {
+				// No more episodes to play
+				queue.currentIndex = 0;
+				queue.updatedAt = new Date();
+				await this.queueStore.saveQueue(queue);
+				logger.info('End of queue, removed played episode', playedEpisodeId);
+				logger.methodExit('QueueManager', 'nextAndRemovePlayed', 'end of queue');
+				return null;
+			}
+		}
+
+		queue.updatedAt = new Date();
+		await this.queueStore.saveQueue(queue);
+
+		const nextEpisodeId = queue.episodeIds[queue.currentIndex];
+
+		logger.info('Moved to next episode and removed played', { played: playedEpisodeId, next: nextEpisodeId });
+		logger.methodExit('QueueManager', 'nextAndRemovePlayed');
+
+		return nextEpisodeId;
+	}
 	/**
 	 * Move to previous episode
 	 */
@@ -392,9 +507,57 @@ export class QueueManager {
 		const episodeId = queue.episodeIds[queue.currentIndex];
 
 		logger.info('Jumped to episode', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
 		logger.methodExit('QueueManager', 'jumpTo');
 
 		return episodeId;
+	}
+
+	/**
+	 * Move an episode from one position to another
+	 */
+	async moveEpisode(queueId: string, fromIndex: number, toIndex: number): Promise<void> {
+		logger.methodEntry('QueueManager', 'moveEpisode', `${queueId}, ${fromIndex} -> ${toIndex}`);
+
+		const queue = await this.queueStore.getQueue(queueId);
+
+		if (!queue) {
+			throw new Error(`Queue not found: ${queueId}`);
+		}
+
+		if (fromIndex < 0 || fromIndex >= queue.episodeIds.length || toIndex < 0 || toIndex >= queue.episodeIds.length) {
+			logger.warn('Invalid index', fromIndex, toIndex);
+			return;
+		}
+
+		const episodeId = queue.episodeIds[fromIndex];
+		queue.episodeIds.splice(fromIndex, 1);
+		queue.episodeIds.splice(toIndex, 0, episodeId);
+
+		// Update current index if needed
+		if (queue.currentIndex === fromIndex) {
+			queue.currentIndex = toIndex;
+		} else if (queue.currentIndex > fromIndex && queue.currentIndex <= toIndex) {
+			queue.currentIndex--;
+		} else if (queue.currentIndex < fromIndex && queue.currentIndex >= toIndex) {
+			queue.currentIndex++;
+		}
+
+		queue.updatedAt = new Date();
+
+		await this.queueStore.saveQueue(queue);
+
+		logger.info('Episode moved', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:queue-updated', queueId);
+		}
+
+		logger.methodExit('QueueManager', 'moveEpisode');
 	}
 
 	/**

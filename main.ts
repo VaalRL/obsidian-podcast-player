@@ -104,20 +104,96 @@ export default class PodcastPlayerPlugin extends Plugin {
 			this.imageCacheStore
 		);
 		this.episodeManager = new EpisodeManager(this.progressStore, this.subscriptionStore);
+
+		// Initialize management layer
+		this.playlistManager = new PlaylistManager(this.playlistStore, this.app);
+		this.queueManager = new QueueManager(this.queueStore, this.app);
+
 		this.feedSyncManager = new FeedSyncManager(
 			this.feedService,
 			this.subscriptionStore,
+			this.queueManager,
+			this.playlistManager,
 			this.settings.feedUpdateInterval * 60 * 1000 // Convert minutes to milliseconds
 		);
-
-		// Initialize management layer
-		this.playlistManager = new PlaylistManager(this.playlistStore);
-		this.queueManager = new QueueManager(this.queueStore);
 
 		// Initialize player layer
 		this.playbackEngine = new PlaybackEngine();
 		this.progressTracker = new ProgressTracker(this.progressStore);
 		this.playerController = new PlayerController(this.playbackEngine, this.progressTracker);
+
+		// Set up player event handlers for queue auto-advance
+		this.playerController.setEventHandlers({
+			onEpisodeEnded: async (episode) => {
+				// When an episode ends, try to play the next one from the queue
+				// and remove the played episode (queue behavior)
+				const currentQueue = await this.queueManager.getCurrentQueue();
+				if (currentQueue && currentQueue.autoPlayNext) {
+					const nextEpisodeId = await this.queueManager.nextAndRemovePlayed(currentQueue.id);
+					if (nextEpisodeId) {
+						// Load and play the next episode
+						const nextEpisode = await this.episodeManager.getEpisodeWithProgress(nextEpisodeId);
+						if (nextEpisode) {
+							await this.playerController.loadEpisode(nextEpisode, true, true);
+						}
+					}
+					// Trigger UI refresh
+					this.app.workspace.trigger('podcast:queue-changed');
+				}
+			}
+		});
+
+		// Synchronization Logic
+
+		// Sync Queue -> Playlist
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
+				const queue = await this.queueManager.getQueue(queueId);
+				if (queue && queue.isPlaylist && queue.sourceId) {
+					const playlist = await this.playlistManager.getPlaylist(queue.sourceId);
+					if (playlist) {
+						// Compare episode IDs
+						const queueIds = queue.episodeIds;
+						const playlistIds = playlist.episodeIds;
+
+						if (JSON.stringify(queueIds) !== JSON.stringify(playlistIds)) {
+							// Update playlist to match queue
+							await this.playlistManager.updatePlaylist(playlist.id, { episodeIds: queueIds });
+						}
+					}
+				}
+			})
+		);
+
+		// Sync Playlist -> Queue
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:playlist-updated', async (playlistId: string) => {
+				const queues = await this.queueManager.getAllQueues();
+				const derivedQueue = queues.find(q => q.sourceId === playlistId);
+
+				if (derivedQueue) {
+					const playlist = await this.playlistManager.getPlaylist(playlistId);
+					if (playlist) {
+						const queueIds = derivedQueue.episodeIds;
+						const playlistIds = playlist.episodeIds;
+
+						if (JSON.stringify(queueIds) !== JSON.stringify(playlistIds)) {
+							const currentEpisodeId = derivedQueue.episodeIds[derivedQueue.currentIndex];
+
+							await this.queueManager.updateQueue(derivedQueue.id, { episodeIds: playlistIds });
+
+							// Try to restore current index
+							const newIndex = playlistIds.indexOf(currentEpisodeId);
+							if (newIndex !== -1) {
+								await this.queueManager.jumpTo(derivedQueue.id, newIndex);
+							} else {
+								await this.queueManager.jumpTo(derivedQueue.id, 0);
+							}
+						}
+					}
+				}
+			})
+		);
 
 		// Initialize markdown layer
 		this.noteExporter = new NoteExporter(this.app.vault);

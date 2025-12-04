@@ -158,6 +158,7 @@
     width: 100%;
     height: 100%;
     background: transparent;
+    position: relative;
     border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
     overflow: visible;
     /* Ensure thumb is visible */
@@ -177,18 +178,18 @@
     transition: width 0.1s linear;
     position: relative;
     /* For pseudo-element positioning */
-    min-width: 2px;
-    /* Ensure it's visible even at 0% if needed, or remove */
+    /* min-width removed - using real thumb element now */
     display: block;
 }
 
-/* Hand-drawn thumb */
-.progress-fill::after {
-    content: '';
+/* Hand-drawn thumb - now using .progress-bar-thumb element instead of ::after */
+
+/* Unused but kept for compatibility */
+.progress-bar-thumb {
     position: absolute;
-    right: -6px;
+    left: 0%;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
     width: 14px;
     height: 14px;
     background-color: var(--text-normal);
@@ -196,11 +197,8 @@
     border-radius: 50%;
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     z-index: 10;
-}
-
-/* Unused but kept for compatibility */
-.progress-bar-thumb {
-    display: none;
+    pointer-events: none;
+    transition: left 0.1s linear;
 }
 
 /* ==========================================================================
@@ -259,12 +257,40 @@
    ========================================================================== */
 
 .playlist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--size-4-3);
     padding: var(--size-4-3);
     border-radius: var(--radius-s);
     cursor: pointer;
     transition: background-color 0.2s;
     border: 1px solid var(--background-modifier-border);
     margin-bottom: var(--size-4-2);
+}
+
+.playlist-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-play-button {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-2);
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.playlist-play-button:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
 }
 
 .playlist-item:hover {
@@ -342,6 +368,10 @@
     margin-top: var(--size-4-4);
     padding-top: var(--size-4-4);
     border-top: 1px solid var(--background-modifier-border);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .queue-header {
@@ -391,6 +421,10 @@
     background-color: var(--background-secondary);
     border-radius: var(--radius-m);
     padding: var(--size-4-3);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .queue-info {
@@ -405,7 +439,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--size-4-1);
-    max-height: 300px;
+    max-height: calc(100vh - 450px);
+    min-height: 200px;
+    flex: 1;
     overflow-y: auto;
 }
 
@@ -789,7 +825,9 @@
 
 .episode-detail-description {
     line-height: 1.6;
-    max-height: 300px;
+    max-height: calc(100vh - 450px);
+    min-height: 200px;
+    flex: 1;
     overflow-y: auto;
 }
 
@@ -1134,25 +1172,29 @@
 
 .control-slider::-webkit-slider-runnable-track {
     width: 100%;
-    height: 4px;
+    height: 6px;
     background: var(--background-modifier-border);
-    border-radius: var(--radius-s);
+    border: 1px solid var(--text-muted);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    box-shadow: 1px 1px 0px var(--text-muted);
 }
 
 .control-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
-    height: 12px;
-    width: 12px;
+    height: 10px;
+    width: 10px;
     border-radius: 50%;
-    background: var(--interactive-accent);
-    margin-top: -4px;
+    background: var(--text-normal);
+    border: 1px solid var(--background-primary);
+    margin-top: -3px;
     /* Center thumb on track */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     transition: transform 0.1s;
 }
 
 .control-slider:hover::-webkit-slider-thumb {
-    transform: scale(1.2);
+    transform: scale(1.15);
+    background: var(--interactive-accent);
 }
 /* ==========================================================================
    Progress Section Layout
@@ -1260,4 +1302,184 @@
     width: 18px;
     height: 18px;
     cursor: pointer;
+}
+
+/* ==========================================================================
+   Progress Tooltip
+   ========================================================================== */
+
+.progress-tooltip {
+    position: absolute;
+    bottom: -28px;
+    left: 0%;
+    transform: translateX(-50%);
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.progress-bar-container:hover .progress-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==========================================================================
+   Queue Episode Item Actions - Drag/Play Toggle
+   ========================================================================== */
+
+.queue-episode-action {
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+/* Default: Show drag icon, hide play icon */
+.queue-episode-action .icon-drag {
+    display: flex;
+}
+
+.queue-episode-action .icon-play {
+    display: none;
+}
+
+/* On hover: Hide drag icon, show play icon */
+.queue-episode-item:hover .queue-episode-action .icon-drag {
+    display: none;
+}
+
+.queue-episode-item:hover .queue-episode-action .icon-play {
+    display: flex;
+    color: var(--text-normal);
+    cursor: pointer;
+}
+
+.queue-episode-item:hover .queue-episode-action .icon-play:hover {
+    color: var(--interactive-accent);
+}
+
+/* Current episode icon */
+.queue-episode-action .icon-current {
+    color: var(--interactive-accent);
+}
+
+/* ==========================================================================
+   Queue and Playlist Sections in Sidebar
+   ========================================================================== */
+
+.queue-section-sidebar,
+.playlist-section-sidebar {
+    margin-bottom: var(--size-4-4);
+}
+
+.section-title {
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 var(--size-4-2) 0;
+    padding: 0 var(--size-4-1);
+}
+
+.queue-item {
+    background-color: var(--background-secondary-alt);
+    border-color: var(--interactive-accent);
+    border-left: 3px solid var(--interactive-accent);
+}
+
+/* ==========================================================================
+   All Episodes View
+   ========================================================================== */
+
+.all-episodes-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: var(--size-4-3);
+}
+
+.all-episodes-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.episode-podcast-name {
+    color: var(--interactive-accent);
+    font-weight: 500;
+}
+
+.episode-meta-separator {
+    color: var(--text-muted);
+}
+
+.episode-play-button {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-2);
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.episode-play-button:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.episode-actions {
+    display: flex;
+    gap: var(--size-4-1);
+    flex-shrink: 0;
+}
+
+.episode-action-button {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-1);
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+    width: 28px;
+    height: 28px;
+}
+
+.episode-action-button:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+/* Drag and Drop */
+.playlist-episode-item.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--interactive-accent);
+}
+
+.playlist-episode-item.drag-over {
+    border-top: 2px solid var(--interactive-accent);
 }

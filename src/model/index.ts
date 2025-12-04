@@ -21,6 +21,16 @@ export interface PodcastSettings {
 }
 
 /**
+ * Rule for automatically adding new episodes to a playlist or queue
+ */
+export interface AutoAddRule {
+	enabled: boolean;
+	targetType: 'playlist' | 'queue';
+	targetId: string;
+	position: 'top' | 'bottom';
+}
+
+/**
  * Podcast - Represents a podcast feed
  */
 export interface Podcast {
@@ -48,6 +58,8 @@ export interface Podcast {
 	lastFetchedAt?: Date;
 	/** Custom settings for this podcast (overrides global settings) */
 	settings?: PodcastSettings;
+	/** Rule for automatically adding new episodes */
+	autoAddRule?: AutoAddRule;
 	/** Episodes (may be loaded separately) */
 	episodes?: Episode[];
 }
@@ -148,6 +160,10 @@ export interface Queue {
 	createdAt: Date;
 	/** Last modified timestamp */
 	updatedAt: Date;
+	/** Whether this queue is derived from a playlist */
+	isPlaylist?: boolean;
+	/** ID of the playlist this queue was created from */
+	sourceId?: string;
 }
 
 /**

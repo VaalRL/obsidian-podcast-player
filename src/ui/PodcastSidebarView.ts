@@ -9,10 +9,11 @@
 
 import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { Podcast, Episode, Playlist } from '../model';
+import { Podcast, Episode, Playlist, Queue } from '../model';
 import { EpisodeStatistics } from '../podcast/EpisodeManager';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
+import { RenameModal } from './RenameModal';
 import { SubscribePodcastModal } from './SubscribePodcastModal';
 import { PodcastSettingsModal } from './PodcastSettingsModal';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
@@ -29,18 +30,48 @@ export class PodcastSidebarView extends ItemView {
 	private viewMode: 'podcasts' | 'playlists' = 'podcasts';
 	private selectedPodcast: Podcast | null = null;
 	private selectedPlaylist: Playlist | null = null;
+	private selectedQueue: Queue | null = null;
 	private searchQuery: string = '';
-	private podcastSortBy: 'title' | 'author' | 'date' | 'count' | 'unplayed' = 'title';
+	private podcastSortBy: 'title' | 'author' | 'date' | 'count' | 'unplayed' | 'latest' = 'title';
 	private episodeSortBy: 'title' | 'date' | 'duration' = 'date';
 	private playlistSortBy: 'name' | 'date' | 'count' = 'date';
 	private podcastSortDirection: 'asc' | 'desc' = 'asc';
 	private episodeSortDirection: 'asc' | 'desc' = 'desc';
 	private playlistSortDirection: 'asc' | 'desc' = 'asc';
 	private podcastStats: Map<string, EpisodeStatistics> = new Map();
+	private feedsViewMode: 'feeds' | 'episodes' = 'feeds'; // Toggle between feeds list and all episodes
+
+	// Drag and drop state
+	private dragStartIndex: number = -1;
+	private dragType: 'playlist' | 'queue' | null = null;
+	private dragTargetId: string | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+	}
+
+	async onload() {
+		super.onload();
+
+		// Listen for queue/playlist updates
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
+				if (this.selectedQueue && this.selectedQueue.id === queueId) {
+					this.selectedQueue = await this.plugin.getQueueManager().getQueue(queueId);
+					await this.render();
+				}
+			})
+		);
+
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:playlist-updated', async (playlistId: string) => {
+				if (this.selectedPlaylist && this.selectedPlaylist.id === playlistId) {
+					this.selectedPlaylist = await this.plugin.getPlaylistManager().getPlaylist(playlistId);
+					await this.render();
+				}
+			})
+		);
 	}
 
 	/**
@@ -101,8 +132,15 @@ export class PodcastSidebarView extends ItemView {
 			await this.renderEpisodeList();
 		} else if (this.selectedPlaylist) {
 			await this.renderPlaylistDetails();
+		} else if (this.selectedQueue) {
+			await this.renderQueueDetails();
 		} else if (this.viewMode === 'podcasts') {
-			await this.renderPodcastList();
+			// Check feeds view mode
+			if (this.feedsViewMode === 'episodes') {
+				await this.renderAllEpisodes();
+			} else {
+				await this.renderPodcastList();
+			}
 		} else {
 			await this.renderPlaylistList();
 		}
@@ -209,6 +247,7 @@ export class PodcastSidebarView extends ItemView {
 				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.podcastSortBy = 'title'; this.render(); }));
 				menu.addItem((item) => item.setTitle('Author').setChecked(currentSortBy === 'author').onClick(() => { this.podcastSortBy = 'author'; this.render(); }));
 				menu.addItem((item) => item.setTitle('Subscribed Date').setChecked(currentSortBy === 'date').onClick(() => { this.podcastSortBy = 'date'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Latest Episode').setChecked(currentSortBy === 'latest').onClick(() => { this.podcastSortBy = 'latest'; this.render(); }));
 				menu.addItem((item) => item.setTitle('Total Episodes').setChecked(currentSortBy === 'count').onClick(() => { this.podcastSortBy = 'count'; this.render(); }));
 				menu.addItem((item) => item.setTitle('Unplayed Count').setChecked(currentSortBy === 'unplayed').onClick(() => { this.podcastSortBy = 'unplayed'; this.render(); }));
 			}
@@ -254,7 +293,7 @@ export class PodcastSidebarView extends ItemView {
 		const header = this.sidebarContentEl.createDiv({ cls: 'sidebar-header' });
 
 		// Back button (if viewing details) - now inside header
-		if (this.selectedPodcast || this.selectedPlaylist) {
+		if (this.selectedPodcast || this.selectedPlaylist || this.selectedQueue) {
 			const backBtn = header.createEl('button', {
 				cls: 'sidebar-back-button',
 				attr: { 'aria-label': 'Back to list' }
@@ -267,6 +306,7 @@ export class PodcastSidebarView extends ItemView {
 				console.log('Back button clicked'); // Debug log
 				this.selectedPodcast = null;
 				this.selectedPlaylist = null;
+				this.selectedQueue = null;
 				this.render();
 			});
 		}
@@ -277,8 +317,12 @@ export class PodcastSidebarView extends ItemView {
 			title = this.selectedPodcast.title;
 		} else if (this.selectedPlaylist) {
 			title = this.selectedPlaylist.name;
+		} else if (this.selectedQueue) {
+			title = this.selectedQueue.name;
+		} else if (this.viewMode === 'podcasts') {
+			title = this.feedsViewMode === 'feeds' ? 'My Feeds' : 'All Episodes';
 		} else {
-			title = this.viewMode === 'podcasts' ? 'My Podcasts' : 'My Playlists';
+			title = 'My Lists';
 		}
 
 		header.createEl('h2', { text: title, cls: 'sidebar-title' });
@@ -286,8 +330,19 @@ export class PodcastSidebarView extends ItemView {
 		// Action buttons
 		const actions = header.createDiv({ cls: 'sidebar-actions' });
 
-		if (!this.selectedPodcast && !this.selectedPlaylist) {
+		if (!this.selectedPodcast && !this.selectedPlaylist && !this.selectedQueue) {
 			if (this.viewMode === 'podcasts') {
+				// Toggle view mode button (feeds vs all episodes)
+				const toggleViewBtn = actions.createEl('button', {
+					cls: 'sidebar-action-button',
+					attr: { 'aria-label': this.feedsViewMode === 'feeds' ? 'Show all episodes' : 'Show feeds' }
+				});
+				setIcon(toggleViewBtn, this.feedsViewMode === 'feeds' ? 'list' : 'rss');
+				toggleViewBtn.addEventListener('click', () => {
+					this.feedsViewMode = this.feedsViewMode === 'feeds' ? 'episodes' : 'feeds';
+					this.render();
+				});
+
 				// Add podcast button
 				const addBtn = actions.createEl('button', {
 					cls: 'sidebar-action-button',
@@ -304,13 +359,31 @@ export class PodcastSidebarView extends ItemView {
 				setIcon(refreshBtn, 'refresh-cw');
 				refreshBtn.addEventListener('click', () => this.handleRefreshFeeds());
 			} else {
-				// Create playlist button
+				// Create new (queue or playlist) button
 				const addBtn = actions.createEl('button', {
 					cls: 'sidebar-action-button',
-					attr: { 'aria-label': 'Create playlist' }
+					attr: { 'aria-label': 'Create new' }
 				});
 				setIcon(addBtn, 'plus');
-				addBtn.addEventListener('click', () => this.handleCreatePlaylist());
+				addBtn.addEventListener('click', (e) => {
+					const menu = new Menu();
+
+					menu.addItem((item) =>
+						item
+							.setTitle('New Queue')
+							.setIcon('list-ordered')
+							.onClick(() => this.handleCreateQueue())
+					);
+
+					menu.addItem((item) =>
+						item
+							.setTitle('New Playlist')
+							.setIcon('folder-plus')
+							.onClick(() => this.handleCreatePlaylist())
+					);
+
+					menu.showAtMouseEvent(e);
+				});
 			}
 		} else if (this.selectedPodcast) {
 			// Settings button (for selected podcast)
@@ -328,6 +401,14 @@ export class PodcastSidebarView extends ItemView {
 			});
 			setIcon(renameBtn, 'pencil');
 			renameBtn.addEventListener('click', () => this.handleRenamePlaylist());
+		} else if (this.selectedQueue) {
+			// Rename button (for selected queue)
+			const renameBtn = actions.createEl('button', {
+				cls: 'sidebar-action-button',
+				attr: { 'aria-label': 'Rename queue' }
+			});
+			setIcon(renameBtn, 'pencil');
+			renameBtn.addEventListener('click', () => this.handleRenameQueue());
 		}
 
 		// Mode toggle (only if not viewing details) - separate row below header
@@ -335,7 +416,7 @@ export class PodcastSidebarView extends ItemView {
 			const modeToggle = this.sidebarContentEl.createDiv({ cls: 'sidebar-mode-toggle' });
 
 			const podcastsBtn = modeToggle.createEl('button', {
-				text: 'Podcasts',
+				text: 'Feeds',
 				cls: this.viewMode === 'podcasts' ? 'mode-active' : 'mode-inactive'
 			});
 			podcastsBtn.addEventListener('click', () => {
@@ -344,7 +425,7 @@ export class PodcastSidebarView extends ItemView {
 			});
 
 			const playlistsBtn = modeToggle.createEl('button', {
-				text: 'Playlists',
+				text: 'Lists',
 				cls: this.viewMode === 'playlists' ? 'mode-active' : 'mode-inactive'
 			});
 			playlistsBtn.addEventListener('click', () => {
@@ -396,6 +477,127 @@ export class PodcastSidebarView extends ItemView {
 		for (const podcast of podcasts) {
 			this.renderPodcastItem(listContainer, podcast);
 		}
+	}
+
+	/**
+	 * Render all episodes from all podcasts in a single list
+	 */
+	private async renderAllEpisodes(): Promise<void> {
+		const listContainer = this.sidebarContentEl.createDiv({ cls: 'episode-list-container' });
+
+		// Gather all episodes from all podcasts
+		const subscriptionStore = this.plugin.getSubscriptionStore();
+		const podcasts = await subscriptionStore.getAllPodcasts();
+
+		let allEpisodes: Episode[] = [];
+		const podcastMap = new Map<string, Podcast>();
+
+		for (const podcast of podcasts) {
+			podcastMap.set(podcast.id, podcast);
+			if (podcast.episodes) {
+				allEpisodes = allEpisodes.concat(podcast.episodes);
+			}
+		}
+
+		// Filter episodes based on search query
+		if (this.searchQuery) {
+			allEpisodes = this.filterEpisodes(allEpisodes, this.searchQuery);
+		}
+
+		// Sort episodes
+		allEpisodes = this.sortEpisodes(allEpisodes, this.episodeSortBy, this.episodeSortDirection);
+
+		if (allEpisodes.length === 0) {
+			const empty = listContainer.createDiv({ cls: 'empty-state' });
+			if (this.searchQuery) {
+				empty.createEl('p', { text: 'No episodes found' });
+				empty.createEl('p', {
+					text: `No episodes match "${this.searchQuery}"`,
+					cls: 'empty-state-hint'
+				});
+			} else {
+				empty.createEl('p', { text: 'No episodes yet' });
+				empty.createEl('p', {
+					text: 'Subscribe to podcasts to see episodes here',
+					cls: 'empty-state-hint'
+				});
+			}
+			return;
+		}
+
+		// Render each episode with podcast info
+		for (const episode of allEpisodes) {
+			const podcast = podcastMap.get(episode.podcastId);
+			this.renderAllEpisodesItem(listContainer, episode, podcast);
+		}
+	}
+
+	/**
+	 * Render a single episode item in the all episodes view
+	 */
+	private renderAllEpisodesItem(container: HTMLElement, episode: Episode, podcast?: Podcast): void {
+		const item = container.createDiv({ cls: 'episode-item all-episodes-item' });
+
+		// Episode info
+		const info = item.createDiv({ cls: 'episode-info' });
+
+		// Episode title
+		info.createEl('div', {
+			text: episode.title,
+			cls: 'episode-title'
+		});
+
+		// Podcast name and date row
+		const meta = info.createDiv({ cls: 'episode-meta' });
+		if (podcast) {
+			meta.createSpan({ text: podcast.title, cls: 'episode-podcast-name' });
+			meta.createSpan({ text: ' • ', cls: 'episode-meta-separator' });
+		}
+		meta.createSpan({
+			text: this.formatDate(new Date(episode.publishDate)),
+			cls: 'episode-date'
+		});
+		if (episode.duration) {
+			meta.createSpan({ text: ' • ', cls: 'episode-meta-separator' });
+			meta.createSpan({
+				text: this.formatDuration(episode.duration),
+				cls: 'episode-duration'
+			});
+		}
+
+		// Action buttons container
+		const actions = item.createDiv({ cls: 'episode-actions' });
+
+		// Play button
+		const playBtn = actions.createEl('button', {
+			cls: 'episode-action-button',
+			attr: { 'aria-label': 'Play episode' }
+		});
+		setIcon(playBtn, 'play');
+		playBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.handlePlayEpisode(episode);
+		});
+
+		// Add to button
+		const addBtn = actions.createEl('button', {
+			cls: 'episode-action-button',
+			attr: { 'aria-label': 'Add to queue or playlist' }
+		});
+		setIcon(addBtn, 'plus');
+		addBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.showAddToPlaylistMenu(episode, e);
+		});
+
+		// Click to show details
+		item.addEventListener('click', () => this.handleEpisodeClick(episode));
+
+		// Context menu
+		item.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			this.showEpisodeContextMenu(episode, e);
+		});
 	}
 
 	/**
@@ -616,11 +818,12 @@ export class PodcastSidebarView extends ItemView {
 			this.app,
 			this.plugin,
 			this.selectedPodcast,
-			async (settings) => {
+			async (settings, autoAddRule) => {
 				// Save the settings to the podcast
 				try {
 					const subscriptionStore = this.plugin.getSubscriptionStore();
 					this.selectedPodcast!.settings = settings;
+					this.selectedPodcast!.autoAddRule = autoAddRule;
 					await subscriptionStore.updatePodcast(this.selectedPodcast!);
 
 					new Notice('Podcast settings updated');
@@ -643,54 +846,103 @@ export class PodcastSidebarView extends ItemView {
 		const playlistManager = this.plugin.getPlaylistManager();
 		const queueManager = this.plugin.getQueueManager();
 
-		// Add to Queue option
+		// Queues Section
+		menu.addItem((item) => item.setTitle('Queues').setIsLabel(true));
+
+		const queues = await queueManager.getAllQueues();
+		queues.forEach(queue => {
+			menu.addItem((item) =>
+				item
+					.setTitle(queue.name)
+					.setIcon('list-ordered')
+					.onClick(async () => {
+						try {
+							await queueManager.addEpisode(queue.id, episode.id);
+							new Notice(`Added to queue: ${queue.name}`);
+						} catch (e) {
+							console.error(e);
+							new Notice('Failed to add to queue');
+						}
+					})
+			);
+		});
+
+		// New Queue Option
 		menu.addItem((item) =>
 			item
-				.setTitle('Add to Queue')
-				.setIcon('list-plus')
+				.setTitle('New Queue...')
+				.setIcon('plus')
 				.onClick(async () => {
-					try {
-						let queue = await queueManager.getCurrentQueue();
-						if (!queue) {
-							const queues = await queueManager.getAllQueues();
-							if (queues.length > 0) queue = queues[0];
-							else queue = await queueManager.createQueue('Default Queue');
-						}
-						await queueManager.addEpisode(queue.id, episode.id);
-						new Notice('Added to queue');
-					} catch (e) {
-						console.error(e);
-						new Notice('Failed to add to queue');
+					const name = await this.promptForInput('New Queue', 'Enter queue name:');
+					if (name) {
+						const newQueue = await queueManager.createQueue(name);
+						await queueManager.addEpisode(newQueue.id, episode.id);
+						new Notice(`Created queue "${name}" and added episode`);
+						await this.render();
 					}
 				})
 		);
 
 		menu.addSeparator();
 
-		// Add to Playlists
+		// Playlists Section
+		menu.addItem((item) => item.setTitle('Playlists').setIsLabel(true));
+
 		const playlists = await playlistManager.getAllPlaylists();
-		if (playlists.length === 0) {
-			menu.addItem((item) => item.setTitle('No playlists').setDisabled(true));
-		} else {
-			playlists.forEach(playlist => {
-				menu.addItem((item) =>
-					item
-						.setTitle(playlist.name)
-						.setIcon('list')
-						.onClick(async () => {
-							try {
-								await playlistManager.addEpisode(playlist.id, episode.id);
-								new Notice(`Added to playlist: ${playlist.name}`);
-							} catch (e) {
-								console.error(e);
-								new Notice('Failed to add to playlist');
-							}
-						})
-				);
-			});
-		}
+		playlists.forEach(playlist => {
+			menu.addItem((item) =>
+				item
+					.setTitle(playlist.name)
+					.setIcon('list')
+					.onClick(async () => {
+						try {
+							await playlistManager.addEpisode(playlist.id, episode.id);
+							new Notice(`Added to playlist: ${playlist.name}`);
+						} catch (e) {
+							console.error(e);
+							new Notice('Failed to add to playlist');
+						}
+					})
+			);
+		});
+
+		// New Playlist Option
+		menu.addItem((item) =>
+			item
+				.setTitle('New Playlist...')
+				.setIcon('plus')
+				.onClick(async () => {
+					const name = await this.promptForInput('New Playlist', 'Enter playlist name:');
+					if (name) {
+						const newPlaylist = await playlistManager.createPlaylist(name);
+						await playlistManager.addEpisode(newPlaylist.id, episode.id);
+						new Notice(`Created playlist "${name}" and added episode`);
+						await this.render();
+					}
+				})
+		);
 
 		menu.showAtMouseEvent(event);
+	}
+
+	/**
+	 * Handle play playlist
+	 */
+	private async handlePlayPlaylist(playlist: Playlist): Promise<void> {
+		if (playlist.episodeIds.length === 0) {
+			new Notice('Playlist is empty');
+			return;
+		}
+
+		const episodeManager = this.plugin.getEpisodeManager();
+		const firstEpisodeId = playlist.episodeIds[0];
+		const firstEpisode = await episodeManager.getEpisodeWithProgress(firstEpisodeId);
+
+		if (firstEpisode) {
+			await this.handlePlayEpisode(firstEpisode, false, playlist);
+		} else {
+			new Notice('Failed to load first episode of playlist');
+		}
 	}
 
 	/**
@@ -711,6 +963,9 @@ export class PodcastSidebarView extends ItemView {
 					// Create new queue for this playlist
 					queue = await queueManager.createQueue(`Playlist: ${fromPlaylist.name}`);
 				}
+
+				// Set isPlaylist flag and sourceId
+				await queueManager.updateQueue(queue.id, { isPlaylist: true, sourceId: fromPlaylist.id });
 
 				// Clear and repopulate queue with playlist episodes
 				await queueManager.clearQueue(queue.id);
@@ -743,6 +998,42 @@ export class PodcastSidebarView extends ItemView {
 				await queueManager.insertEpisode(queue.id, episode.id, 0);
 				// Update current index to 0 so the queue continues from here
 				await queueManager.jumpTo(queue.id, 0);
+			} else {
+				// Playing from podcast list - create queue with all visible episodes
+				if (this.selectedPodcast) {
+					const queueName = `Podcast: ${this.selectedPodcast.title}`;
+
+					// Get episodes and apply current filter/sort
+					let episodes = this.selectedPodcast.episodes || [];
+
+					if (this.searchQuery) {
+						episodes = this.filterEpisodes(episodes, this.searchQuery);
+					}
+
+					episodes = this.sortEpisodes(episodes, this.episodeSortBy, this.episodeSortDirection);
+
+					// Find or create queue
+					const allQueues = await queueManager.getAllQueues();
+					let queue = allQueues.find(q => q.name === queueName);
+
+					if (!queue) {
+						queue = await queueManager.createQueue(queueName);
+					}
+
+					// Update queue episodes
+					await queueManager.clearQueue(queue.id);
+					const episodeIds = episodes.map(e => e.id);
+					await queueManager.addEpisodes(queue.id, episodeIds);
+
+					// Jump to clicked episode
+					const index = episodeIds.indexOf(episode.id);
+					if (index !== -1) {
+						await queueManager.jumpTo(queue.id, index);
+					}
+
+					// Set as current queue
+					queueManager.setCurrentQueue(queue.id);
+				}
 			}
 
 			// Load the episode into the player with autoPlay = true
@@ -1001,7 +1292,7 @@ export class PodcastSidebarView extends ItemView {
 	 */
 	private sortPodcasts(
 		podcasts: Podcast[],
-		sortBy: 'title' | 'author' | 'date' | 'count' | 'unplayed',
+		sortBy: 'title' | 'author' | 'date' | 'count' | 'unplayed' | 'latest',
 		direction: 'asc' | 'desc'
 	): Podcast[] {
 		const sorted = [...podcasts].sort((a, b) => {
@@ -1019,6 +1310,12 @@ export class PodcastSidebarView extends ItemView {
 					const bDate = new Date(b.subscribedAt).getTime();
 					comparison = aDate - bDate;
 					break;
+				case 'latest':
+					// Sort by most recent episode publish date
+					const aLatest = this.getLatestEpisodeDate(a);
+					const bLatest = this.getLatestEpisodeDate(b);
+					comparison = aLatest - bLatest;
+					break;
 				case 'count':
 					const aCount = this.podcastStats.get(a.id)?.totalEpisodes || 0;
 					const bCount = this.podcastStats.get(b.id)?.totalEpisodes || 0;
@@ -1035,6 +1332,18 @@ export class PodcastSidebarView extends ItemView {
 		});
 
 		return sorted;
+	}
+
+	/**
+	 * Get the latest episode publish date for a podcast
+	 */
+	private getLatestEpisodeDate(podcast: Podcast): number {
+		if (!podcast.episodes || podcast.episodes.length === 0) {
+			return 0;
+		}
+
+		const dates = podcast.episodes.map(ep => new Date(ep.publishDate).getTime());
+		return Math.max(...dates);
 	}
 
 	/**
@@ -1074,6 +1383,20 @@ export class PodcastSidebarView extends ItemView {
 	private async renderPlaylistList(): Promise<void> {
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-list-container' });
 
+		// Get default queue first
+		const queueManager = this.plugin.getQueueManager();
+		const allQueues = await queueManager.getAllQueues();
+
+		// Render default queue section if there are queues
+		if (allQueues.length > 0 && !this.searchQuery) {
+			const queueSection = listContainer.createDiv({ cls: 'queue-section-sidebar' });
+			queueSection.createEl('h4', { text: 'Queues', cls: 'section-title' });
+
+			for (const queue of allQueues) {
+				this.renderQueueAsPlaylistItem(queueSection, queue);
+			}
+		}
+
 		const playlistManager = this.plugin.getPlaylistManager();
 		let playlists = await playlistManager.getAllPlaylists();
 
@@ -1085,27 +1408,200 @@ export class PodcastSidebarView extends ItemView {
 		// Sort playlists
 		playlists = this.sortPlaylists(playlists, this.playlistSortBy, this.playlistSortDirection);
 
-		if (playlists.length === 0) {
-			const empty = listContainer.createDiv({ cls: 'empty-state' });
-			if (this.searchQuery) {
-				empty.createEl('p', { text: 'No playlists found' });
-				empty.createEl('p', {
-					text: `No playlists match "${this.searchQuery}"`,
-					cls: 'empty-state-hint'
-				});
-			} else {
-				empty.createEl('p', { text: 'No playlists yet' });
-				empty.createEl('p', {
-					text: 'Click the + button to create a playlist',
-					cls: 'empty-state-hint'
-				});
+		// Add section header for playlists
+		if (playlists.length > 0 || this.searchQuery) {
+			const playlistSection = listContainer.createDiv({ cls: 'playlist-section-sidebar' });
+			if (!this.searchQuery) {
+				playlistSection.createEl('h4', { text: 'Playlists', cls: 'section-title' });
 			}
+
+			if (playlists.length === 0) {
+				const empty = playlistSection.createDiv({ cls: 'empty-state' });
+				if (this.searchQuery) {
+					empty.createEl('p', { text: 'No playlists found' });
+					empty.createEl('p', {
+						text: `No playlists match "${this.searchQuery}"`,
+						cls: 'empty-state-hint'
+					});
+				} else {
+					empty.createEl('p', { text: 'No playlists yet' });
+					empty.createEl('p', {
+						text: 'Click the + button to create a playlist',
+						cls: 'empty-state-hint'
+					});
+				}
+			} else {
+				for (const playlist of playlists) {
+					this.renderPlaylistItem(playlistSection, playlist);
+				}
+			}
+		} else if (allQueues.length === 0) {
+			// No queues and no playlists
+			const empty = listContainer.createDiv({ cls: 'empty-state' });
+			empty.createEl('p', { text: 'No playlists yet' });
+			empty.createEl('p', {
+				text: 'Click the + button to create a playlist',
+				cls: 'empty-state-hint'
+			});
+		}
+	}
+
+	/**
+	 * Render a queue as a playlist item
+	 */
+	private renderQueueAsPlaylistItem(container: HTMLElement, queue: Queue): void {
+		const item = container.createDiv({ cls: 'playlist-item queue-item' });
+
+		// Info section
+		const info = item.createDiv({ cls: 'playlist-info' });
+		info.createEl('h3', { text: queue.name, cls: 'playlist-title' });
+
+		// Metadata
+		const metadata = info.createDiv({ cls: 'playlist-metadata' });
+		metadata.createSpan({ text: `${queue.episodeIds.length} episodes`, cls: 'playlist-count' });
+		metadata.createSpan({ text: ` • Updated ${this.formatDate(queue.updatedAt)}`, cls: 'playlist-date' });
+
+		// Play button
+		const playBtn = item.createEl('button', {
+			cls: 'playlist-play-button',
+			attr: { 'aria-label': 'Play queue' }
+		});
+		setIcon(playBtn, 'play');
+		playBtn.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			await this.handlePlayQueue(queue);
+		});
+
+		// Click to view details
+		item.addEventListener('click', () => {
+			this.showQueueDetails(queue);
+		});
+
+		// Context menu (limited options for queues)
+		item.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			this.showQueueContextMenu(queue, e);
+		});
+	}
+
+	/**
+	 * Handle play queue
+	 */
+	private async handlePlayQueue(queue: Queue): Promise<void> {
+		if (queue.episodeIds.length === 0) {
+			new Notice('Queue is empty');
 			return;
 		}
 
-		for (const playlist of playlists) {
-			this.renderPlaylistItem(listContainer, playlist);
+		try {
+			const queueManager = this.plugin.getQueueManager();
+			queueManager.setCurrentQueue(queue.id);
+
+			// Get the first episode
+			const episodeManager = this.plugin.getEpisodeManager();
+			const firstEpisodeId = queue.episodeIds[queue.currentIndex] || queue.episodeIds[0];
+			const episode = await episodeManager.getEpisodeWithProgress(firstEpisodeId);
+
+			if (episode) {
+				await this.plugin.playerController.loadEpisode(episode, true, true);
+			}
+		} catch (error) {
+			console.error('Failed to play queue:', error);
+			new Notice('Failed to play queue');
 		}
+	}
+
+	/**
+	 * Show queue details
+	 */
+	private async showQueueDetails(queue: Queue): Promise<void> {
+		this.selectedQueue = queue;
+		await this.render();
+	}
+
+	/**
+	 * Show context menu for queue (limited options)
+	 */
+	private showQueueContextMenu(queue: Queue, event: MouseEvent): void {
+		const menu = new Menu();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('View Details')
+				.setIcon('list')
+				.onClick(() => {
+					this.showQueueDetails(queue);
+				})
+		);
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Play')
+				.setIcon('play')
+				.onClick(async () => {
+					await this.handlePlayQueue(queue);
+				})
+		);
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Rename')
+				.setIcon('pencil')
+				.onClick(async () => {
+					const newName = await this.promptForInput('Rename Queue', 'Enter new name:', queue.name);
+					if (!newName || newName === queue.name) return;
+
+					try {
+						const queueManager = this.plugin.getQueueManager();
+						await queueManager.updateQueue(queue.id, { name: newName });
+						new Notice('Queue renamed');
+						await this.render();
+					} catch (error) {
+						console.error('Failed to rename queue:', error);
+						new Notice('Failed to rename queue');
+					}
+				})
+		);
+
+		menu.addSeparator();
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Clear Queue')
+				.setIcon('eraser')
+				.onClick(async () => {
+					try {
+						const queueManager = this.plugin.getQueueManager();
+						await queueManager.clearQueue(queue.id);
+						new Notice('Queue cleared');
+						await this.render();
+					} catch (error) {
+						console.error('Failed to clear queue:', error);
+						new Notice('Failed to clear queue');
+					}
+				})
+		);
+
+		menu.addItem((item) =>
+			item
+				.setTitle('Delete Queue')
+				.setIcon('trash')
+				.onClick(async () => {
+					// Confirm deletion
+					// For now just delete
+					try {
+						const queueManager = this.plugin.getQueueManager();
+						await queueManager.deleteQueue(queue.id);
+						new Notice('Queue deleted');
+						await this.render();
+					} catch (error) {
+						console.error('Failed to delete queue:', error);
+						new Notice('Failed to delete queue');
+					}
+				})
+		);
+
+		menu.showAtMouseEvent(event);
 	}
 
 	/**
@@ -1205,6 +1701,22 @@ export class PodcastSidebarView extends ItemView {
 	private renderPlaylistEpisodeItem(container: HTMLElement, episode: Episode, index: number): void {
 		const item = container.createDiv({ cls: 'playlist-episode-item' });
 
+		// Drag and Drop
+		item.draggable = true;
+		item.addEventListener('dragstart', (e) => {
+			if (this.selectedPlaylist) {
+				this.handleDragStart(e, index, 'playlist', this.selectedPlaylist.id);
+			}
+		});
+		item.addEventListener('dragover', this.handleDragOver);
+		item.addEventListener('dragenter', this.handleDragEnter);
+		item.addEventListener('dragleave', this.handleDragLeave);
+		item.addEventListener('drop', (e) => {
+			if (this.selectedPlaylist) {
+				this.handleDrop(e, index, 'playlist', this.selectedPlaylist.id);
+			}
+		});
+
 		// Index
 		const indexEl = item.createDiv({ cls: 'playlist-episode-index' });
 		indexEl.textContent = `${index + 1}`;
@@ -1231,6 +1743,24 @@ export class PodcastSidebarView extends ItemView {
 			this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
 		});
 
+		// Delete button
+		const deleteBtn = item.createEl('button', {
+			cls: 'playlist-episode-delete',
+			attr: { 'aria-label': 'Remove from playlist' }
+		});
+		setIcon(deleteBtn, 'trash');
+		deleteBtn.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			if (this.selectedPlaylist) {
+				const playlistManager = this.plugin.getPlaylistManager();
+				await playlistManager.removeEpisode(this.selectedPlaylist.id, episode.id);
+
+				// Update local state
+				this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
+				await this.render();
+			}
+		});
+
 		// Click to show episode details
 		item.addEventListener('click', () => {
 			this.handleEpisodeClick(episode);
@@ -1241,6 +1771,175 @@ export class PodcastSidebarView extends ItemView {
 			e.preventDefault();
 			this.showPlaylistEpisodeContextMenu(episode, index, e);
 		});
+	}
+
+	/**
+	 * Render a single episode item in queue
+	 */
+	private renderQueueEpisodeItem(container: HTMLElement, episode: Episode, index: number): void {
+		const item = container.createDiv({ cls: 'playlist-episode-item' });
+
+		// Drag and Drop
+		item.draggable = true;
+		item.addEventListener('dragstart', (e) => {
+			if (this.selectedQueue) {
+				this.handleDragStart(e, index, 'queue', this.selectedQueue.id);
+			}
+		});
+		item.addEventListener('dragover', this.handleDragOver);
+		item.addEventListener('dragenter', this.handleDragEnter);
+		item.addEventListener('dragleave', this.handleDragLeave);
+		item.addEventListener('drop', (e) => {
+			if (this.selectedQueue) {
+				this.handleDrop(e, index, 'queue', this.selectedQueue.id);
+			}
+		});
+
+		// Index
+		const indexEl = item.createDiv({ cls: 'playlist-episode-index' });
+		indexEl.textContent = `${index + 1}`;
+
+		// Info
+		const info = item.createDiv({ cls: 'playlist-episode-info' });
+		info.createEl('h4', { text: episode.title, cls: 'playlist-episode-title' });
+
+		// Metadata
+		const metadata = info.createDiv({ cls: 'playlist-episode-metadata' });
+		if (episode.duration) {
+			metadata.createSpan({ text: this.formatDuration(episode.duration), cls: 'playlist-episode-duration' });
+		}
+
+		// Play button
+		const playBtn = item.createEl('button', {
+			cls: 'playlist-episode-play',
+			attr: { 'aria-label': 'Play episode' }
+		});
+		setIcon(playBtn, 'play');
+		playBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.handlePlayEpisode(episode);
+		});
+
+		// Delete button
+		const deleteBtn = item.createEl('button', {
+			cls: 'playlist-episode-delete',
+			attr: { 'aria-label': 'Remove from queue' }
+		});
+		setIcon(deleteBtn, 'trash');
+		deleteBtn.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			if (this.selectedQueue) {
+				const queueManager = this.plugin.getQueueManager();
+				await queueManager.removeEpisode(this.selectedQueue.id, episode.id);
+
+				// Update local state
+				this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
+				await this.render();
+			}
+		});
+
+		// Click to show episode details
+		item.addEventListener('click', () => {
+			this.handleEpisodeClick(episode);
+		});
+
+		// Context menu
+		item.addEventListener('contextmenu', (e) => {
+			e.preventDefault();
+			this.showEpisodeContextMenu(episode, e);
+		});
+	}
+
+	// Drag and Drop Handlers
+
+	private handleDragStart(e: DragEvent, index: number, type: 'playlist' | 'queue', id: string) {
+		this.dragStartIndex = index;
+		this.dragType = type;
+		this.dragTargetId = id;
+
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', JSON.stringify({ index, type, id }));
+		}
+
+		// Add dragging class for styling
+		(e.target as HTMLElement).addClass('dragging');
+	}
+
+	private handleDragOver(e: DragEvent) {
+		if (e.preventDefault) {
+			e.preventDefault(); // Necessary. Allows us to drop.
+		}
+		if (e.dataTransfer) {
+			e.dataTransfer.dropEffect = 'move';
+		}
+		return false;
+	}
+
+	private handleDragEnter(e: DragEvent) {
+		(e.target as HTMLElement).closest('.playlist-episode-item')?.addClass('drag-over');
+	}
+
+	private handleDragLeave(e: DragEvent) {
+		(e.target as HTMLElement).closest('.playlist-episode-item')?.removeClass('drag-over');
+	}
+
+	private async handleDrop(e: DragEvent, dropIndex: number, type: 'playlist' | 'queue', id: string) {
+		e.stopPropagation(); // stops the browser from redirecting.
+
+		(e.target as HTMLElement).closest('.playlist-episode-item')?.removeClass('drag-over');
+
+		// Don't do anything if dropping on same item or different list
+		if (this.dragStartIndex === dropIndex ||
+			this.dragType !== type ||
+			this.dragTargetId !== id) {
+			return;
+		}
+
+		try {
+			if (type === 'playlist') {
+				const playlistManager = this.plugin.getPlaylistManager();
+				const playlist = await playlistManager.getPlaylist(id);
+				if (playlist) {
+					// Reorder
+					const episodeId = playlist.episodeIds[this.dragStartIndex];
+					playlist.episodeIds.splice(this.dragStartIndex, 1);
+					playlist.episodeIds.splice(dropIndex, 0, episodeId);
+
+					await playlistManager.updatePlaylist(id, { episodeIds: playlist.episodeIds });
+
+					// Update local state
+					this.selectedPlaylist = playlist;
+				}
+			} else if (type === 'queue') {
+				const queueManager = this.plugin.getQueueManager();
+				const queue = await queueManager.getQueue(id);
+				if (queue) {
+					// Reorder
+					const episodeId = queue.episodeIds[this.dragStartIndex];
+					queue.episodeIds.splice(this.dragStartIndex, 1);
+					queue.episodeIds.splice(dropIndex, 0, episodeId);
+
+					await queueManager.updateQueue(id, { episodeIds: queue.episodeIds });
+
+					// Update local state
+					this.selectedQueue = queue;
+				}
+			}
+
+			await this.render();
+		} catch (error) {
+			console.error('Failed to reorder:', error);
+			new Notice('Failed to reorder items');
+		} finally {
+			// Cleanup
+			document.querySelectorAll('.dragging').forEach(el => el.removeClass('dragging'));
+			this.dragStartIndex = -1;
+			this.dragType = null;
+			this.dragTargetId = null;
+		}
+
+		return false;
 	}
 
 	/**
@@ -1269,32 +1968,179 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	/**
+	 * Handle create queue button click
+	 */
+	private async handleCreateQueue(): Promise<void> {
+		try {
+			// Prompt for queue name
+			const name = await this.promptForInput('Create Queue', 'Enter queue name:');
+			if (!name) return;
+
+			const queueManager = this.plugin.getQueueManager();
+			await queueManager.createQueue(name);
+
+			new Notice(`Queue "${name}" created`);
+
+			// Refresh the view
+			await this.render();
+		} catch (error) {
+			console.error('Failed to create queue:', error);
+			new Notice('Failed to create queue');
+		}
+	}
+
+	/**
 	 * Handle rename playlist button click
 	 */
 	private async handleRenamePlaylist(): Promise<void> {
 		if (!this.selectedPlaylist) return;
 
-		try {
-			// Prompt for new playlist name
-			const newName = await this.promptForInput(
-				'Rename Playlist',
-				'Enter new playlist name:',
-				this.selectedPlaylist.name
-			);
-			if (!newName || newName === this.selectedPlaylist.name) return;
+		new RenameModal(
+			this.app,
+			'Rename Playlist',
+			this.selectedPlaylist.name,
+			'Enter new playlist name',
+			async (newName) => {
+				if (!this.selectedPlaylist || !newName || newName === this.selectedPlaylist.name) return;
 
-			const playlistManager = this.plugin.getPlaylistManager();
-			await playlistManager.updatePlaylist(this.selectedPlaylist.id, { name: newName });
+				try {
+					const playlistManager = this.plugin.getPlaylistManager();
+					await playlistManager.updatePlaylist(this.selectedPlaylist.id, { name: newName });
 
-			new Notice(`Playlist renamed to "${newName}"`);
+					new Notice(`Playlist renamed to "${newName}"`);
 
-			// Update selected playlist and refresh the view
-			this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
-			await this.render();
-		} catch (error) {
-			console.error('Failed to rename playlist:', error);
-			new Notice('Failed to rename playlist');
+					// Update selected playlist and refresh the view
+					this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
+					await this.render();
+				} catch (error) {
+					console.error('Failed to rename playlist:', error);
+					new Notice('Failed to rename playlist');
+				}
+			},
+			async () => {
+				// Delete handler
+				if (!this.selectedPlaylist) return;
+
+				try {
+					const playlistManager = this.plugin.getPlaylistManager();
+					await playlistManager.deletePlaylist(this.selectedPlaylist.id);
+
+					new Notice('Playlist deleted');
+					this.selectedPlaylist = null;
+					await this.render();
+				} catch (error) {
+					console.error('Failed to delete playlist:', error);
+					new Notice('Failed to delete playlist');
+				}
+			}
+		).open();
+	}
+
+	/**
+	 * Render queue details (episodes)
+	 */
+	private async renderQueueDetails(): Promise<void> {
+		if (!this.selectedQueue) return;
+
+		const detailsContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-details-container' });
+
+		// Header section with metadata and play button
+		const header = detailsContainer.createDiv({ cls: 'playlist-details-header' });
+		header.style.display = 'flex';
+		header.style.justifyContent = 'space-between';
+		header.style.alignItems = 'center';
+		header.style.marginBottom = 'var(--size-4-3)';
+
+		// Metadata section
+		const metadata = header.createDiv({ cls: 'playlist-details-metadata' });
+		metadata.createEl('p', {
+			text: `${this.selectedQueue.episodeIds.length} episodes`,
+			cls: 'playlist-details-count'
+		});
+
+		// Play All button
+		const playAllBtn = header.createEl('button', {
+			text: 'Play Queue',
+			cls: 'playlist-play-all-button'
+		});
+		setIcon(playAllBtn, 'play');
+		playAllBtn.addEventListener('click', () => {
+			if (this.selectedQueue) {
+				this.handlePlayQueue(this.selectedQueue);
+			}
+		});
+
+		// Episodes list
+		const listContainer = detailsContainer.createDiv({ cls: 'episode-list-container' });
+
+		if (this.selectedQueue.episodeIds.length === 0) {
+			const empty = listContainer.createDiv({ cls: 'empty-state' });
+			empty.createEl('p', { text: 'Queue is empty' });
+			return;
 		}
+
+		// Load episodes
+		const episodeManager = this.plugin.getEpisodeManager();
+		const episodes: Episode[] = [];
+
+		for (const episodeId of this.selectedQueue.episodeIds) {
+			const episode = await episodeManager.getEpisodeWithProgress(episodeId);
+			if (episode) {
+				episodes.push(episode);
+			}
+		}
+
+		// Render episodes
+		episodes.forEach((episode, index) => {
+			this.renderQueueEpisodeItem(listContainer, episode, index);
+		});
+	}
+
+	/**
+	 * Handle rename queue button click
+	 */
+	private async handleRenameQueue(): Promise<void> {
+		if (!this.selectedQueue) return;
+
+		new RenameModal(
+			this.app,
+			'Rename Queue',
+			this.selectedQueue.name,
+			'Enter new queue name',
+			async (newName) => {
+				if (!this.selectedQueue || !newName || newName === this.selectedQueue.name) return;
+
+				try {
+					const queueManager = this.plugin.getQueueManager();
+					await queueManager.updateQueue(this.selectedQueue.id, { name: newName });
+
+					// Update local state
+					this.selectedQueue.name = newName;
+
+					new Notice('Queue renamed');
+					await this.render();
+				} catch (error) {
+					console.error('Failed to rename queue:', error);
+					new Notice('Failed to rename queue');
+				}
+			},
+			async () => {
+				// Delete handler
+				if (!this.selectedQueue) return;
+
+				try {
+					const queueManager = this.plugin.getQueueManager();
+					await queueManager.deleteQueue(this.selectedQueue.id);
+
+					new Notice('Queue deleted');
+					this.selectedQueue = null;
+					await this.render();
+				} catch (error) {
+					console.error('Failed to delete queue:', error);
+					new Notice('Failed to delete queue');
+				}
+			}
+		).open();
 	}
 
 	/**

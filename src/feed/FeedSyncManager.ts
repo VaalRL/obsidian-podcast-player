@@ -9,6 +9,10 @@ import { logger } from '../utils/Logger';
 import { Podcast, FeedUpdateResult } from '../model';
 import { FeedService } from './FeedService';
 import { SubscriptionStore } from '../storage/SubscriptionStore';
+import { QueueManager } from '../queue/QueueManager';
+import { PlaylistManager } from '../playlist/PlaylistManager';
+import { AutoAddRule, Episode } from '../model';
+import { Notice } from 'obsidian';
 
 /**
  * Sync options
@@ -53,6 +57,8 @@ export interface BatchSyncResult {
 export class FeedSyncManager {
 	private feedService: FeedService;
 	private subscriptionStore: SubscriptionStore;
+	private queueManager: QueueManager;
+	private playlistManager: PlaylistManager;
 	private syncInterval: number;
 	private syncTimer: NodeJS.Timeout | null = null;
 	private isSyncing = false;
@@ -61,10 +67,14 @@ export class FeedSyncManager {
 	constructor(
 		feedService: FeedService,
 		subscriptionStore: SubscriptionStore,
+		queueManager: QueueManager,
+		playlistManager: PlaylistManager,
 		syncInterval: number = 3600000 // Default: 1 hour
 	) {
 		this.feedService = feedService;
 		this.subscriptionStore = subscriptionStore;
+		this.queueManager = queueManager;
+		this.playlistManager = playlistManager;
 		this.syncInterval = syncInterval;
 	}
 
@@ -290,6 +300,11 @@ export class FeedSyncManager {
 
 			updatedPodcast.episodes = uniqueEpisodes;
 
+			// Handle auto-add rule
+			if (newEpisodes.length > 0 && podcast.autoAddRule && podcast.autoAddRule.enabled) {
+				await this.handleAutoAdd(podcast.autoAddRule, newEpisodes);
+			}
+
 			await this.subscriptionStore.updatePodcast(updatedPodcast);
 
 			return {
@@ -306,6 +321,44 @@ export class FeedSyncManager {
 				newEpisodesCount: 0,
 				error: error instanceof Error ? error.message : 'Unknown error',
 			};
+		}
+	}
+
+	/**
+	 * Handle auto-add rule
+	 */
+	private async handleAutoAdd(rule: AutoAddRule, episodes: Episode[]): Promise<void> {
+		try {
+			const episodeIds = episodes.map(e => e.id);
+
+			if (rule.targetType === 'queue') {
+				const queue = await this.queueManager.getQueue(rule.targetId);
+				if (queue) {
+					if (rule.position === 'top') {
+						// Insert in reverse order to maintain sequence at top
+						for (let i = episodes.length - 1; i >= 0; i--) {
+							await this.queueManager.insertEpisode(rule.targetId, episodes[i].id, 0);
+						}
+					} else {
+						await this.queueManager.addEpisodes(rule.targetId, episodeIds);
+					}
+					new Notice(`Auto-added ${episodes.length} episodes to queue: ${queue.name}`);
+				}
+			} else if (rule.targetType === 'playlist') {
+				const playlist = await this.playlistManager.getPlaylist(rule.targetId);
+				if (playlist) {
+					if (rule.position === 'top') {
+						const currentIds = playlist.episodeIds;
+						const newIds = [...episodeIds, ...currentIds];
+						await this.playlistManager.updatePlaylist(rule.targetId, { episodeIds: newIds });
+					} else {
+						await this.playlistManager.addEpisodes(rule.targetId, episodeIds);
+					}
+					new Notice(`Auto-added ${episodes.length} episodes to playlist: ${playlist.name}`);
+				}
+			}
+		} catch (error) {
+			logger.error('Failed to auto-add episodes', error);
 		}
 	}
 

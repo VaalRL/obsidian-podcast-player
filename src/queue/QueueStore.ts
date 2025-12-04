@@ -22,6 +22,25 @@ export class QueueStore extends MultiFileStore<Queue[], Queue> {
 	}
 
 	/**
+	 * Load a single queue item and ensure dates are Date objects
+	 */
+	protected async loadItem(id: string, fallback: Queue): Promise<Queue> {
+		const queue = await super.loadItem(id, fallback);
+
+		if (queue) {
+			// Convert date strings to Date objects if needed
+			if (typeof queue.createdAt === 'string') {
+				queue.createdAt = new Date(queue.createdAt);
+			}
+			if (typeof queue.updatedAt === 'string') {
+				queue.updatedAt = new Date(queue.updatedAt);
+			}
+		}
+
+		return queue;
+	}
+
+	/**
 	 * Validate queue data
 	 */
 	protected validate(data: Queue[]): boolean {

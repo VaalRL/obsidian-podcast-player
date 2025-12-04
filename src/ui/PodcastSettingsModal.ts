@@ -10,7 +10,7 @@
 
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { Podcast, PodcastSettings } from '../model';
+import { Podcast, PodcastSettings, AutoAddRule } from '../model';
 
 /**
  * Modal for configuring individual podcast settings
@@ -18,7 +18,7 @@ import { Podcast, PodcastSettings } from '../model';
 export class PodcastSettingsModal extends Modal {
 	plugin: PodcastPlayerPlugin;
 	podcast: Podcast;
-	onSubmit: (settings: PodcastSettings) => void;
+	onSubmit: (settings: PodcastSettings, autoAddRule?: AutoAddRule) => void;
 
 	// Form values
 	private volume: number;
@@ -26,11 +26,17 @@ export class PodcastSettingsModal extends Modal {
 	private skipIntroSeconds: number;
 	private skipOutroSeconds: number;
 
+	// Auto-add settings
+	private autoAddEnabled: boolean;
+	private autoAddTargetType: 'playlist' | 'queue';
+	private autoAddTargetId: string;
+	private autoAddPosition: 'top' | 'bottom';
+
 	constructor(
 		app: App,
 		plugin: PodcastPlayerPlugin,
 		podcast: Podcast,
-		onSubmit: (settings: PodcastSettings) => void
+		onSubmit: (settings: PodcastSettings, autoAddRule?: AutoAddRule) => void
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -43,6 +49,13 @@ export class PodcastSettingsModal extends Modal {
 		this.playbackSpeed = currentSettings.playbackSpeed;
 		this.skipIntroSeconds = currentSettings.skipIntroSeconds;
 		this.skipOutroSeconds = currentSettings.skipOutroSeconds || 0;
+
+		// Initialize auto-add settings
+		const rule = podcast.autoAddRule;
+		this.autoAddEnabled = rule?.enabled || false;
+		this.autoAddTargetType = rule?.targetType || 'queue';
+		this.autoAddTargetId = rule?.targetId || '';
+		this.autoAddPosition = rule?.position || 'bottom';
 	}
 
 	async onOpen() {
@@ -108,6 +121,71 @@ export class PodcastSettingsModal extends Modal {
 						this.skipOutroSeconds = num;
 					}
 				}));
+
+		// Auto-add Section
+		contentEl.createEl('h3', { text: 'Auto-add New Episodes' });
+
+		new Setting(contentEl)
+			.setName('Enable auto-add')
+			.setDesc('Automatically add new episodes to a playlist or queue')
+			.addToggle(toggle => toggle
+				.setValue(this.autoAddEnabled)
+				.onChange(async (value) => {
+					this.autoAddEnabled = value;
+					this.onOpen(); // Re-render to show/hide options
+				}));
+
+		if (this.autoAddEnabled) {
+			const playlistManager = this.plugin.getPlaylistManager();
+			const queueManager = this.plugin.getQueueManager();
+
+			const playlists = await playlistManager.getAllPlaylists();
+			const queues = await queueManager.getAllQueues();
+
+			// Target selection
+			const targetSetting = new Setting(contentEl)
+				.setName('Target')
+				.setDesc('Select where to add new episodes');
+
+			targetSetting.addDropdown(dropdown => {
+				dropdown.addOption('', 'Select a target...');
+
+				if (queues.length > 0) {
+					queues.forEach(q => dropdown.addOption(`queue:${q.id}`, `Queue: ${q.name}`));
+				}
+
+				if (playlists.length > 0) {
+					playlists.forEach(p => dropdown.addOption(`playlist:${p.id}`, `Playlist: ${p.name}`));
+				}
+
+				// Set initial value
+				if (this.autoAddTargetId) {
+					dropdown.setValue(`${this.autoAddTargetType}:${this.autoAddTargetId}`);
+				}
+
+				dropdown.onChange(value => {
+					if (value) {
+						const [type, id] = value.split(':');
+						this.autoAddTargetType = type as 'playlist' | 'queue';
+						this.autoAddTargetId = id;
+					} else {
+						this.autoAddTargetId = '';
+					}
+				});
+			});
+
+			// Position selection
+			new Setting(contentEl)
+				.setName('Position')
+				.setDesc('Where to add the episode in the list')
+				.addDropdown(dropdown => dropdown
+					.addOption('top', 'Top (Beginning)')
+					.addOption('bottom', 'Bottom (End)')
+					.setValue(this.autoAddPosition)
+					.onChange(value => {
+						this.autoAddPosition = value as 'top' | 'bottom';
+					}));
+		}
 
 		// Buttons
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
@@ -176,8 +254,33 @@ export class PodcastSettingsModal extends Modal {
 				skipOutroSeconds: this.skipOutroSeconds
 			};
 
+			// Create auto-add rule
+			let autoAddRule: AutoAddRule | undefined;
+			if (this.autoAddEnabled) {
+				if (!this.autoAddTargetId) {
+					new Notice('Please select a target for auto-add');
+					return;
+				}
+
+				autoAddRule = {
+					enabled: true,
+					targetType: this.autoAddTargetType,
+					targetId: this.autoAddTargetId,
+					position: this.autoAddPosition
+				};
+			} else {
+				// If disabled but previously existed, we might want to keep it but disabled,
+				// or just remove it. Let's keep it disabled if we have values, or undefined if not.
+				if (this.podcast.autoAddRule) {
+					autoAddRule = {
+						...this.podcast.autoAddRule,
+						enabled: false
+					};
+				}
+			}
+
 			// Call the callback
-			this.onSubmit(settings);
+			this.onSubmit(settings, autoAddRule);
 
 			// Close the modal
 			this.close();

@@ -5,6 +5,7 @@
  * creating, updating, and organizing playlists.
  */
 
+import { App } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { Playlist, Episode } from '../model';
 import { PlaylistStore } from './PlaylistStore';
@@ -14,9 +15,11 @@ import { PlaylistStore } from './PlaylistStore';
  */
 export class PlaylistManager {
 	private playlistStore: PlaylistStore;
+	private app?: App;
 
-	constructor(playlistStore: PlaylistStore) {
+	constructor(playlistStore: PlaylistStore, app?: App) {
 		this.playlistStore = playlistStore;
+		this.app = app;
 	}
 
 	/**
@@ -95,6 +98,10 @@ export class PlaylistManager {
 
 		await this.playlistStore.savePlaylist(updatedPlaylist);
 
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', id);
+		}
+
 		logger.methodExit('PlaylistManager', 'updatePlaylist');
 	}
 
@@ -134,6 +141,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info('Episode added to playlist', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'addEpisode');
 	}
 
@@ -164,6 +176,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info(`Added ${newEpisodeIds.length} episodes to playlist`);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'addEpisodes');
 	}
 
@@ -192,6 +209,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info('Episode removed from playlist', episodeId);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'removeEpisode');
 	}
 
@@ -214,6 +236,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info(`Removed ${episodeIds.length} episodes from playlist`);
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'removeEpisodes');
 	}
 
@@ -243,6 +270,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info('Playlist episodes reordered');
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'reorderEpisodes');
 	}
 
@@ -276,6 +308,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info('Episode moved in playlist');
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'moveEpisode');
 	}
 
@@ -297,6 +334,11 @@ export class PlaylistManager {
 		await this.playlistStore.savePlaylist(playlist);
 
 		logger.info('Playlist cleared');
+
+		if (this.app) {
+			this.app.workspace.trigger('podcast:playlist-updated', playlistId);
+		}
+
 		logger.methodExit('PlaylistManager', 'clearPlaylist');
 	}
 

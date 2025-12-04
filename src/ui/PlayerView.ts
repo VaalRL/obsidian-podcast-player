@@ -20,10 +20,26 @@ export class PlayerView extends ItemView {
 	private playerContentEl: HTMLElement;
 	private updateInterval: number | null = null;
 	private currentQueueId: string | null = null;
+	private isDraggingProgress: boolean = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+	}
+
+	async onload() {
+		super.onload();
+
+		// Listen for queue updates
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
+				// If current queue is updated, refresh
+				const currentQueue = await this.plugin.getQueueManager().getCurrentQueue();
+				if (currentQueue && currentQueue.id === queueId) {
+					await this.renderPlayer();
+				}
+			})
+		);
 	}
 
 	/**
@@ -170,6 +186,7 @@ export class PlayerView extends ItemView {
 		nextBtn.addEventListener('click', () => this.handleNext());
 	}
 
+
 	/**
 	 * Render progress section (progress bar and time)
 	 */
@@ -181,12 +198,121 @@ export class PlayerView extends ItemView {
 
 		// Progress bar container
 		const progressBarContainer = progressSection.createDiv({ cls: 'progress-bar-container' });
+		progressBarContainer.setAttribute('tabindex', '0'); // Make focusable
+		progressBarContainer.setAttribute('aria-label', 'Seek slider');
+		progressBarContainer.setAttribute('role', 'slider');
+
 		const progressBar = progressBarContainer.createDiv({ cls: 'progress-bar' });
 		const progressFill = progressBar.createDiv({ cls: 'progress-fill' });
 		progressFill.style.width = '0%';
 
-		// Make progress bar clickable for seeking
-		progressBarContainer.addEventListener('click', (e) => this.handleSeek(e, progressBarContainer));
+		// Thumb element for precise positioning
+		const progressThumb = progressBar.createDiv({ cls: 'progress-bar-thumb' });
+		progressThumb.style.left = '0%';
+
+		// Tooltip
+		const tooltip = progressBarContainer.createDiv({ cls: 'progress-tooltip' });
+		tooltip.textContent = '0:00';
+
+		// Make progress bar draggable and clickable
+		progressBarContainer.addEventListener('mousedown', (e) => {
+			e.preventDefault(); // Prevent text selection
+			progressBarContainer.focus(); // Ensure focus for keyboard controls
+
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+			if (!state.currentEpisode) return;
+
+			this.isDraggingProgress = true;
+			const duration = state.currentEpisode.duration;
+
+			const updateUI = (evt: MouseEvent) => {
+				const rect = progressBarContainer.getBoundingClientRect();
+				const clickX = evt.clientX - rect.left;
+				const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+
+				// Update UI
+				const progressFill = progressBarContainer.querySelector('.progress-fill') as HTMLElement;
+				const progressThumb = progressBarContainer.querySelector('.progress-bar-thumb') as HTMLElement;
+				const currentTimeEl = this.playerContentEl.querySelector('.current-time') as HTMLElement;
+
+				if (progressFill) progressFill.style.width = `${percentage * 100}%`;
+				if (progressThumb) progressThumb.style.left = `${percentage * 100}%`;
+				if (currentTimeEl) currentTimeEl.textContent = this.formatTime(duration * percentage);
+
+				return percentage;
+			};
+
+			// Initial update on mousedown
+			let finalPercentage = updateUI(e);
+
+			const onMouseMove = (moveEvent: MouseEvent) => {
+				if (this.isDraggingProgress) {
+					finalPercentage = updateUI(moveEvent);
+				}
+			};
+
+			const onMouseUp = async () => {
+				this.isDraggingProgress = false;
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+
+				// Commit seek
+				await playerController.seek(duration * finalPercentage);
+			};
+
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+		});
+
+		// Keyboard controls
+		progressBarContainer.addEventListener('keydown', async (e) => {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+			if (!state.currentEpisode) return;
+
+			const duration = state.currentEpisode.duration;
+			const currentPosition = state.position;
+			let newPosition = currentPosition;
+
+			switch (e.key) {
+				case 'ArrowLeft':
+					e.preventDefault();
+					newPosition = Math.max(0, currentPosition - 5); // Seek back 5s
+					break;
+				case 'ArrowRight':
+					e.preventDefault();
+					newPosition = Math.min(duration, currentPosition + 5); // Seek forward 5s
+					break;
+				case 'Home':
+					e.preventDefault();
+					newPosition = 0;
+					break;
+				case 'End':
+					e.preventDefault();
+					newPosition = duration;
+					break;
+				default:
+					return;
+			}
+
+			await playerController.seek(newPosition);
+		});
+
+		// Tooltip behavior
+		progressBarContainer.addEventListener('mousemove', (e) => {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+			if (!state.currentEpisode) return;
+
+			const rect = progressBarContainer.getBoundingClientRect();
+			const hoverX = e.clientX - rect.left;
+			const percentage = Math.max(0, Math.min(1, hoverX / rect.width));
+			const duration = state.currentEpisode.duration;
+
+			tooltip.textContent = this.formatTime(duration * percentage);
+			tooltip.style.left = `${percentage * 100}%`;
+		});
 
 		// Total time (End)
 		progressSection.createSpan({ text: '0:00', cls: 'total-time' });
@@ -437,11 +563,13 @@ export class PlayerView extends ItemView {
 		}
 	}
 
+	private lastQueueUpdatedAt: number = 0;
+
 	/**
 	 * Update the player state in the UI
 	 * This will be called periodically to keep the UI in sync
 	 */
-	private updatePlayerState(): void {
+	private async updatePlayerState(): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
 			const state = playerController.getState();
@@ -482,7 +610,6 @@ export class PlayerView extends ItemView {
 			}
 
 			// Update play/pause button
-			// Update play/pause button
 			const playPauseBtn = this.playerContentEl.querySelector('.player-button-play-pause') as HTMLElement;
 			if (playPauseBtn) {
 				setIcon(playPauseBtn, state.status === 'playing' ? 'pause' : 'play');
@@ -497,19 +624,18 @@ export class PlayerView extends ItemView {
 				totalTimeEl.textContent = this.formatTime(state.currentEpisode.duration);
 			}
 
-			// Update progress bar
+			// Update progress bar and thumb
 			const progressFill = this.playerContentEl.querySelector('.progress-fill') as HTMLElement;
-			if (progressFill) {
+			const progressThumb = this.playerContentEl.querySelector('.progress-bar-thumb') as HTMLElement;
+			if (progressFill && !this.isDraggingProgress) {
 				if (state.currentEpisode && state.currentEpisode.duration > 0) {
 					const percentage = Math.min(100, Math.max(0, (state.position / state.currentEpisode.duration) * 100));
 					progressFill.style.width = `${percentage}%`;
-					// Debug log
-					if (percentage > 0) {
-						console.log(`Progress bar updated: ${percentage.toFixed(2)}% (${state.position.toFixed(1)}s / ${state.currentEpisode.duration.toFixed(1)}s)`);
-					}
+					if (progressThumb) progressThumb.style.left = `${percentage}%`;
 				} else {
 					// No episode or invalid duration, reset to 0
 					progressFill.style.width = '0%';
+					if (progressThumb) progressThumb.style.left = '0%';
 				}
 			}
 
@@ -531,6 +657,29 @@ export class PlayerView extends ItemView {
 			if (speedLabel) {
 				speedLabel.textContent = `${state.playbackSpeed.toFixed(1)}x`;
 			}
+
+			// Check for queue updates
+			const queueManager = this.plugin.getQueueManager();
+			const currentQueue = await queueManager.getCurrentQueue();
+
+			if (currentQueue) {
+				const updatedAt = currentQueue.updatedAt instanceof Date ? currentQueue.updatedAt.getTime() : new Date(currentQueue.updatedAt).getTime();
+
+				// If queue ID changed OR queue was updated
+				if (currentQueue.id !== this.currentQueueId || updatedAt > this.lastQueueUpdatedAt) {
+					this.currentQueueId = currentQueue.id;
+					this.lastQueueUpdatedAt = updatedAt;
+
+					const playerContainer = this.playerContentEl.querySelector('.player-container') as HTMLElement;
+					if (playerContainer) {
+						const oldQueueSection = playerContainer.querySelector('.queue-section');
+						if (oldQueueSection) {
+							oldQueueSection.remove();
+						}
+						await this.renderQueueSection(playerContainer);
+					}
+				}
+			}
 		} catch (error) {
 			console.error('Failed to update player state:', error);
 		}
@@ -550,10 +699,6 @@ export class PlayerView extends ItemView {
 			return `${minutes}:${secs.toString().padStart(2, '0')}`;
 		}
 	}
-
-	/**
-	 * Render current queue section
-	 */
 	private async renderQueueSection(container: HTMLElement): Promise<void> {
 		const queueSection = container.createDiv({ cls: 'queue-section' });
 
@@ -563,7 +708,18 @@ export class PlayerView extends ItemView {
 
 			// Section header with queue name
 			const header = queueSection.createDiv({ cls: 'queue-header' });
-			const titleText = queue ? `Current Queue: ${queue.name}` : 'Current Queue';
+
+			let titleText = 'Current Queue';
+			if (queue) {
+				if (queue.isPlaylist) {
+					// Remove "Playlist: " prefix if present for cleaner display
+					const name = queue.name.startsWith('Playlist: ') ? queue.name.substring(10) : queue.name;
+					titleText = `Current Playlist: ${name}`;
+				} else {
+					titleText = `Current Queue: ${queue.name}`;
+				}
+			}
+
 			header.createEl('h3', { text: titleText, cls: 'queue-title' });
 
 			if (!queue || queue.episodeIds.length === 0) {
@@ -593,16 +749,28 @@ export class PlayerView extends ItemView {
 		try {
 			const queueManager = this.plugin.getQueueManager();
 
-			// Try to get queue from current queue ID
+			// Always try to get the current queue from QueueManager first
+			const currentQueue = await queueManager.getCurrentQueue();
+			if (currentQueue) {
+				this.currentQueueId = currentQueue.id;
+				return currentQueue;
+			}
+
+			// If QueueManager doesn't have a current queue, try to use our local ID
 			if (this.currentQueueId) {
 				const queue = await queueManager.getQueue(this.currentQueueId);
-				if (queue) return queue;
+				if (queue) {
+					// Sync back to QueueManager
+					queueManager.setCurrentQueue(queue.id);
+					return queue;
+				}
 			}
 
 			// Otherwise, get the first available queue (or default queue)
 			const allQueues = await queueManager.getAllQueues();
 			if (allQueues.length > 0) {
 				this.currentQueueId = allQueues[0].id;
+				queueManager.setCurrentQueue(allQueues[0].id);
 				return allQueues[0];
 			}
 
@@ -678,12 +846,68 @@ export class PlayerView extends ItemView {
 			cls: isCurrent ? 'queue-episode-item current' : 'queue-episode-item'
 		});
 
-		// Index
-		const indexEl = item.createDiv({ cls: 'queue-episode-index' });
-		indexEl.textContent = `${index + 1}`;
+		// Make item draggable
+		item.draggable = true;
+
+		// Drag events
+		item.addEventListener('dragstart', (e) => {
+			e.dataTransfer?.setData('text/plain', index.toString());
+			item.addClass('dragging');
+			// Set drag effect
+			if (e.dataTransfer) {
+				e.dataTransfer.effectAllowed = 'move';
+			}
+		});
+
+		item.addEventListener('dragend', () => {
+			item.removeClass('dragging');
+			container.querySelectorAll('.queue-episode-item').forEach(el => el.removeClass('drag-over'));
+		});
+
+		item.addEventListener('dragover', (e) => {
+			e.preventDefault();
+			if (e.dataTransfer) {
+				e.dataTransfer.dropEffect = 'move';
+			}
+			item.addClass('drag-over');
+		});
+
+		item.addEventListener('dragleave', () => {
+			item.removeClass('drag-over');
+		});
+
+		item.addEventListener('drop', async (e) => {
+			e.preventDefault();
+			item.removeClass('drag-over');
+
+			const fromIndex = parseInt(e.dataTransfer?.getData('text/plain') || '-1');
+			if (fromIndex !== -1 && fromIndex !== index && this.currentQueueId) {
+				try {
+					const queueManager = this.plugin.getQueueManager();
+					await queueManager.moveEpisode(this.currentQueueId, fromIndex, index);
+
+					// Force refresh immediately to show new order
+					await this.renderPlayer();
+				} catch (error) {
+					console.error('Failed to move episode:', error);
+				}
+			}
+		});
+
+		// Action Icon (Drag/Play/Pause)
+		const actionEl = item.createDiv({ cls: 'queue-episode-action' });
+
 		if (isCurrent) {
-			indexEl.empty();
-			setIcon(indexEl, 'play');
+			// Current episode - show pause icon
+			const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
+			setIcon(pauseIcon, 'pause');
+		} else {
+			// Other episodes - show drag handle, swap to play on hover
+			const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
+			setIcon(dragIcon, 'grip-vertical');
+
+			const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+			setIcon(playIcon, 'play');
 		}
 
 		// Info

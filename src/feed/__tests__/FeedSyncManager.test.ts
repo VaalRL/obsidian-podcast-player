@@ -24,6 +24,9 @@ describe('FeedSyncManager', () => {
 	let mockFeedService: jest.Mocked<FeedService>;
 	let mockSubscriptionStore: jest.Mocked<SubscriptionStore>;
 
+	let mockQueueManager: any;
+	let mockPlaylistManager: any;
+
 	const samplePodcast: Podcast = {
 		id: 'podcast-123',
 		title: 'Test Podcast',
@@ -69,7 +72,19 @@ describe('FeedSyncManager', () => {
 			updatePodcast: jest.fn(),
 		} as any;
 
-		manager = new FeedSyncManager(mockFeedService, mockSubscriptionStore, 3600000);
+		mockQueueManager = {
+			getQueue: jest.fn(),
+			addEpisodes: jest.fn(),
+			insertEpisode: jest.fn(),
+		};
+
+		mockPlaylistManager = {
+			getPlaylist: jest.fn(),
+			addEpisodes: jest.fn(),
+			updatePlaylist: jest.fn(),
+		};
+
+		manager = new FeedSyncManager(mockFeedService, mockSubscriptionStore, mockQueueManager, mockPlaylistManager, 3600000);
 	});
 
 	afterEach(() => {
@@ -78,13 +93,13 @@ describe('FeedSyncManager', () => {
 
 	describe('constructor', () => {
 		it('should create manager with services and default interval', () => {
-			const freshManager = new FeedSyncManager(mockFeedService, mockSubscriptionStore);
+			const freshManager = new FeedSyncManager(mockFeedService, mockSubscriptionStore, mockQueueManager, mockPlaylistManager);
 			expect(freshManager).toBeInstanceOf(FeedSyncManager);
 		});
 
 		it('should create manager with custom interval', () => {
 			const customInterval = 7200000; // 2 hours
-			const freshManager = new FeedSyncManager(mockFeedService, mockSubscriptionStore, customInterval);
+			const freshManager = new FeedSyncManager(mockFeedService, mockSubscriptionStore, mockQueueManager, mockPlaylistManager, customInterval);
 			expect(freshManager).toBeInstanceOf(FeedSyncManager);
 		});
 	});

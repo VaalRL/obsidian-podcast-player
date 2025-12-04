@@ -22,6 +22,25 @@ export class PlaylistStore extends MultiFileStore<Playlist[], Playlist> {
 	}
 
 	/**
+	 * Load a single playlist item and ensure dates are Date objects
+	 */
+	protected async loadItem(id: string, fallback: Playlist): Promise<Playlist> {
+		const playlist = await super.loadItem(id, fallback);
+
+		if (playlist) {
+			// Convert date strings to Date objects if needed
+			if (typeof playlist.createdAt === 'string') {
+				playlist.createdAt = new Date(playlist.createdAt);
+			}
+			if (typeof playlist.updatedAt === 'string') {
+				playlist.updatedAt = new Date(playlist.updatedAt);
+			}
+		}
+
+		return playlist;
+	}
+
+	/**
 	 * Validate playlist data
 	 */
 	protected validate(data: Playlist[]): boolean {
@@ -82,13 +101,6 @@ export class PlaylistStore extends MultiFileStore<Playlist[], Playlist> {
 			try {
 				const playlist = await this.loadItem(id, null as any);
 				if (playlist && this.validatePlaylist(playlist)) {
-					// Convert date strings to Date objects
-					if (typeof playlist.createdAt === 'string') {
-						playlist.createdAt = new Date(playlist.createdAt);
-					}
-					if (typeof playlist.updatedAt === 'string') {
-						playlist.updatedAt = new Date(playlist.updatedAt);
-					}
 					playlists.push(playlist);
 				}
 			} catch (error) {
