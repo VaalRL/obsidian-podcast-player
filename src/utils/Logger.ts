@@ -14,7 +14,7 @@ export enum LogLevel {
 
 export class Logger {
 	private static instance: Logger;
-	private logLevel: LogLevel = LogLevel.INFO;
+	private logLevel: LogLevel = LogLevel.ERROR;
 	private readonly prefix = '[Podcast Player]';
 
 	private constructor() {

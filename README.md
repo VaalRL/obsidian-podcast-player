@@ -1,6 +1,6 @@
 # Obsidian Podcast
 
-A feature-rich podcast player and manager for Obsidian. Subscribe to podcasts, play episodes, manage playlists and queues, and seamlessly integrate with your notes.
+A feature-rich podcast player and manager. Subscribe, play, and integrate with notes.
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/whoami885)
 

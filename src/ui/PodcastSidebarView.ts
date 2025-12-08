@@ -1080,9 +1080,17 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Refresh Feed')
 				.setIcon('refresh-cw')
-				.onClick(() => {
-
-					// TODO: Refresh this podcast's feed
+				.onClick(async () => {
+					try {
+						const feedSyncManager = this.plugin.getFeedSyncManager();
+						new Notice('Refreshing feed...');
+						await feedSyncManager.syncPodcast(podcast.id);
+						new Notice('Feed refreshed');
+						await this.render();
+					} catch (error) {
+						console.error('Failed to refresh feed:', error);
+						new Notice('Failed to refresh feed');
+					}
 				})
 		);
 
@@ -1092,9 +1100,16 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Unsubscribe')
 				.setIcon('trash')
-				.onClick(() => {
-
-					// TODO: Unsubscribe from podcast
+				.onClick(async () => {
+					try {
+						const podcastService = this.plugin.getPodcastService();
+						await podcastService.unsubscribe(podcast.id);
+						new Notice(`Unsubscribed from ${podcast.title}`);
+						await this.render();
+					} catch (error) {
+						console.error('Failed to unsubscribe:', error);
+						new Notice('Failed to unsubscribe');
+					}
 				})
 		);
 
