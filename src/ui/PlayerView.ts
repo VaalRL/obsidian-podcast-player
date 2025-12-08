@@ -27,18 +27,39 @@ export class PlayerView extends ItemView {
 		this.plugin = plugin;
 	}
 
+	private lastQueueEpisodeIds: string[] = [];
+
 	async onload() {
 		super.onload();
 
 		// Listen for queue updates
 		this.registerEvent(
 			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
-				// If current queue is updated, refresh
+				// If current queue is updated
 				const currentQueue = await this.plugin.getQueueManager().getCurrentQueue();
+
 				if (currentQueue && currentQueue.id === queueId) {
-					await this.renderPlayer();
+					// Check if episodes list actually changed
+					const idsChanged = JSON.stringify(currentQueue.episodeIds) !== JSON.stringify(this.lastQueueEpisodeIds);
+
+					if (idsChanged) {
+						// Content changed - full re-render
+						this.lastQueueEpisodeIds = [...currentQueue.episodeIds];
+						await this.renderPlayer();
+					} else {
+						// Only index/meta changed - just update icons to reflect new current index
+						this.updatePlayState();
+					}
 				}
 			})
+		);
+
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:player-state-updated', () => this.updatePlayState())
+		);
+
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:episode-changed', () => this.updatePlayState())
 		);
 	}
 
@@ -686,6 +707,50 @@ export class PlayerView extends ItemView {
 	}
 
 	/**
+	 * Update play state icons without rebuilding the DOM
+	 */
+	private updatePlayState(): void {
+		try {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+			const currentId = state.currentEpisode?.id;
+			const isPlaying = state.status === 'playing';
+
+			const items = this.playerContentEl.querySelectorAll('.queue-episode-item');
+			items.forEach((item) => {
+				const id = item.getAttribute('data-episode-id');
+				const actionEl = item.querySelector('.queue-episode-action');
+				if (!actionEl) return;
+
+				if (id === currentId) {
+					item.addClass('current');
+					actionEl.empty();
+
+					if (isPlaying) {
+						const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
+						setIcon(pauseIcon, 'pause');
+					} else {
+						// Current but paused - show play icon
+						const playIcon = actionEl.createDiv({ cls: 'icon-current' });
+						setIcon(playIcon, 'play');
+					}
+				} else {
+					item.removeClass('current');
+					actionEl.empty();
+
+					const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
+					setIcon(dragIcon, 'grip-vertical');
+
+					const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+					setIcon(playIcon, 'play');
+				}
+			});
+		} catch (error) {
+			console.error('Failed to update play state:', error);
+		}
+	}
+
+	/**
 	 * Format seconds to MM:SS or HH:MM:SS
 	 */
 	private formatTime(seconds: number): string {
@@ -797,6 +862,11 @@ export class PlayerView extends ItemView {
 
 		const episodeManager = this.plugin.getEpisodeManager();
 
+		// Get current playback state
+		const playerController = this.plugin.playerController;
+		const playerState = playerController.getState();
+		const isCurrentlyPlaying = playerState.status === 'playing';
+
 		// Info bar
 		const info = listContainer.createDiv({ cls: 'queue-info' });
 		info.createSpan({
@@ -816,7 +886,8 @@ export class PlayerView extends ItemView {
 			try {
 				const episode = await episodeManager.getEpisodeWithProgress(episodeId);
 				if (episode) {
-					this.renderQueueEpisodeItem(episodesContainer, episode, i, queue.currentIndex === i);
+					const isCurrent = queue.currentIndex === i;
+					this.renderQueueEpisodeItem(episodesContainer, episode, i, isCurrent, isCurrent && isCurrentlyPlaying);
 				}
 			} catch (error) {
 				console.error(`Failed to load episode: ${episodeId}`, error);
@@ -840,10 +911,12 @@ export class PlayerView extends ItemView {
 		container: HTMLElement,
 		episode: EpisodeWithProgress,
 		index: number,
-		isCurrent: boolean
+		isCurrent: boolean,
+		isPlaying: boolean = false
 	): void {
 		const item = container.createDiv({
-			cls: isCurrent ? 'queue-episode-item current' : 'queue-episode-item'
+			cls: isCurrent ? 'queue-episode-item current' : 'queue-episode-item',
+			attr: { 'data-episode-id': episode.id }
 		});
 
 		// Make item draggable
@@ -897,12 +970,12 @@ export class PlayerView extends ItemView {
 		// Action Icon (Drag/Play/Pause)
 		const actionEl = item.createDiv({ cls: 'queue-episode-action' });
 
-		if (isCurrent) {
-			// Current episode - show pause icon
+		if (isCurrent && isPlaying) {
+			// Currently playing episode - show pause icon only
 			const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
 			setIcon(pauseIcon, 'pause');
 		} else {
-			// Other episodes - show drag handle, swap to play on hover
+			// All other episodes (including current but paused) - show drag handle, swap to play on hover
 			const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
 			setIcon(dragIcon, 'grip-vertical');
 
@@ -932,22 +1005,35 @@ export class PlayerView extends ItemView {
 			});
 		}
 
-		// Click to play
+		// Click to play/pause
 		item.addEventListener('click', async () => {
 			try {
-				const queueManager = this.plugin.getQueueManager();
-				if (this.currentQueueId) {
-					// Jump to this episode in the queue
-					await queueManager.jumpTo(this.currentQueueId, index);
+				const playerController = this.plugin.playerController;
+				const playerState = playerController.getState();
 
-					// Load and play the episode
-					await this.plugin.playerController.loadEpisode(episode, true, true);
+				if (isCurrent) {
+					// Current episode - toggle play/pause
+					if (playerState.status === 'playing') {
+						await playerController.pause();
+					} else {
+						await playerController.play();
+					}
+				} else {
+					// Other episodes - jump to and play
+					const queueManager = this.plugin.getQueueManager();
+					if (this.currentQueueId) {
+						// Jump to this episode in the queue
+						await queueManager.jumpTo(this.currentQueueId, index);
 
-					// Refresh UI
-					await this.renderPlayer();
+						// Load and play the episode
+						await playerController.loadEpisode(episode, true, true);
+
+						// Refresh UI
+						await this.renderPlayer();
+					}
 				}
 			} catch (error) {
-				console.error('Failed to play episode from queue:', error);
+				console.error('Failed to play/pause episode from queue:', error);
 			}
 		});
 	}

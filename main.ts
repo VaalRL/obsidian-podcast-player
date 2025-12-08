@@ -25,6 +25,7 @@ import { PodcastService, EpisodeManager } from './src/podcast';
 import { PlaybackEngine, ProgressTracker, PlayerController } from './src/player';
 import { NoteExporter } from './src/markdown';
 import { CleanupService } from './src/cleanup/CleanupService';
+import { BackupService } from './src/backup';
 import { logger } from './src/utils/Logger';
 
 /**
@@ -71,6 +72,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 	// Cleanup layer
 	private cleanupService: CleanupService;
+
+	// Backup layer
+	private backupService: BackupService;
 
 	/**
 	 * Plugin lifecycle: Called when the plugin is loaded
@@ -122,8 +126,30 @@ export default class PodcastPlayerPlugin extends Plugin {
 		this.progressTracker = new ProgressTracker(this.progressStore);
 		this.playerController = new PlayerController(this.playbackEngine, this.progressTracker);
 
-		// Set up player event handlers for queue auto-advance
+		// Set up player event handlers
+		let lastStatus = 'stopped';
+		let lastEpisodeId: string | null = null;
+		let lastSpeed = 1;
+
 		this.playerController.setEventHandlers({
+			onStateChange: (state) => {
+				// Only trigger update if status, episode, or speed changed
+				// Ignore position updates to prevent event flooding
+				if (state.status !== lastStatus ||
+					state.currentEpisode?.id !== lastEpisodeId ||
+					state.playbackSpeed !== lastSpeed) {
+
+					lastStatus = state.status;
+					lastEpisodeId = state.currentEpisode?.id || null;
+					lastSpeed = state.playbackSpeed;
+
+					this.app.workspace.trigger('podcast:player-state-updated', state);
+				}
+			},
+			onEpisodeChange: (episode) => {
+				lastEpisodeId = episode?.id || null;
+				this.app.workspace.trigger('podcast:episode-changed', episode);
+			},
 			onEpisodeEnded: async (episode) => {
 				// When an episode ends, try to play the next one from the queue
 				// and remove the played episode (queue behavior)
@@ -177,17 +203,35 @@ export default class PodcastPlayerPlugin extends Plugin {
 						const queueIds = derivedQueue.episodeIds;
 						const playlistIds = playlist.episodeIds;
 
-						if (JSON.stringify(queueIds) !== JSON.stringify(playlistIds)) {
-							const currentEpisodeId = derivedQueue.episodeIds[derivedQueue.currentIndex];
+						// Check for name change
+						// Note: We use "Playlist: " prefix in PlayerView logic, so we should maintain it or check how it's stored
+						// In PodcastSidebarView.ts:966, name is set to `Playlist: ${playlist.name}`
+						const expectedName = `Playlist: ${playlist.name}`;
+						const nameChanged = derivedQueue.name !== expectedName;
+						const episodesChanged = JSON.stringify(queueIds) !== JSON.stringify(playlistIds);
 
-							await this.queueManager.updateQueue(derivedQueue.id, { episodeIds: playlistIds });
+						if (episodesChanged || nameChanged) {
+							const updates: any = {};
 
-							// Try to restore current index
-							const newIndex = playlistIds.indexOf(currentEpisodeId);
-							if (newIndex !== -1) {
-								await this.queueManager.jumpTo(derivedQueue.id, newIndex);
-							} else {
-								await this.queueManager.jumpTo(derivedQueue.id, 0);
+							if (episodesChanged) {
+								updates.episodeIds = playlistIds;
+							}
+
+							if (nameChanged) {
+								updates.name = expectedName;
+							}
+
+							await this.queueManager.updateQueue(derivedQueue.id, updates);
+
+							// Try to restore current index only if episodes changed
+							if (episodesChanged) {
+								const currentEpisodeId = derivedQueue.episodeIds[derivedQueue.currentIndex];
+								const newIndex = playlistIds.indexOf(currentEpisodeId);
+								if (newIndex !== -1) {
+									await this.queueManager.jumpTo(derivedQueue.id, newIndex);
+								} else {
+									await this.queueManager.jumpTo(derivedQueue.id, 0);
+								}
 							}
 						}
 					}
@@ -215,6 +259,24 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Start automatic cleanup
 		this.cleanupService.start();
+
+		// Initialize backup layer
+		this.backupService = new BackupService(
+			this.app.vault,
+			this.pathManager,
+			this.subscriptionStore,
+			this.progressStore,
+			this.playlistStore,
+			this.queueStore,
+			{
+				autoBackupEnabled: true,
+				autoBackupIntervalMs: 24 * 60 * 60 * 1000, // 24 hours
+				retentionDays: 30
+			}
+		);
+
+		// Start automatic backup
+		this.backupService.start();
 
 		// Register view types
 		try {
@@ -317,6 +379,11 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Stop cleanup service
 		if (this.cleanupService) {
 			this.cleanupService.stop();
+		}
+
+		// Stop backup service
+		if (this.backupService) {
+			this.backupService.stop();
 		}
 
 		// Detach all our custom views
@@ -498,6 +565,13 @@ export default class PodcastPlayerPlugin extends Plugin {
 	 */
 	getNoteExporter(): NoteExporter {
 		return this.noteExporter;
+	}
+
+	/**
+	 * Get the backup service (for UI components)
+	 */
+	getBackupService(): BackupService {
+		return this.backupService;
 	}
 
 	/**

@@ -33,6 +33,9 @@ export class SubscribePodcastModal extends Modal {
 		this.onSubmit = onSubmit;
 	}
 
+	private activeTab: 'search' | 'url' = 'search';
+	private contentContainer: HTMLElement | null = null;
+
 	async onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
@@ -40,14 +43,64 @@ export class SubscribePodcastModal extends Modal {
 
 		contentEl.createEl('h2', { text: 'Subscribe to Podcast' });
 
-		// Search section
-		this.renderSearchSection(contentEl);
+		// Render Tabs
+		this.renderTabs(contentEl);
 
-		// Divider
-		contentEl.createEl('div', { cls: 'subscribe-divider', text: 'OR' });
+		// Content Container
+		this.contentContainer = contentEl.createDiv({ cls: 'subscribe-modal-content' });
 
-		// Direct URL input section
-		this.renderUrlSection(contentEl);
+		this.renderContent();
+	}
+
+	private renderTabs(container: HTMLElement) {
+		const tabsContainer = container.createDiv({ cls: 'subscribe-modal-tabs' });
+
+		const searchTab = tabsContainer.createEl('button', {
+			text: 'Search Online',
+			cls: 'subscribe-modal-tab'
+		});
+		if (this.activeTab === 'search') searchTab.addClass('active');
+
+		searchTab.onclick = () => {
+			if (this.activeTab === 'search') return;
+			this.activeTab = 'search';
+			this.updateTabStyles(tabsContainer);
+			this.renderContent();
+		};
+
+		const urlTab = tabsContainer.createEl('button', {
+			text: 'Add by URL',
+			cls: 'subscribe-modal-tab'
+		});
+		if (this.activeTab === 'url') urlTab.addClass('active');
+
+		urlTab.onclick = () => {
+			if (this.activeTab === 'url') return;
+			this.activeTab = 'url';
+			this.updateTabStyles(tabsContainer);
+			this.renderContent();
+		};
+	}
+
+	private updateTabStyles(tabsContainer: HTMLElement) {
+		const tabs = tabsContainer.querySelectorAll('.subscribe-modal-tab');
+		tabs[0].className = `subscribe-modal-tab ${this.activeTab === 'search' ? 'active' : ''}`;
+		tabs[1].className = `subscribe-modal-tab ${this.activeTab === 'url' ? 'active' : ''}`;
+	}
+
+	private renderContent() {
+		if (!this.contentContainer) return;
+		this.contentContainer.empty();
+
+		if (this.activeTab === 'search') {
+			this.renderSearchSection(this.contentContainer);
+			// Restore search results if available
+			if (this.searchResults.length > 0) {
+				this.renderSearchResults();
+			}
+		} else {
+			this.renderUrlSection(this.contentContainer);
+		}
 	}
 
 	/**
@@ -55,8 +108,6 @@ export class SubscribePodcastModal extends Modal {
 	 */
 	private renderSearchSection(container: HTMLElement): void {
 		const searchSection = container.createDiv({ cls: 'subscribe-search-section' });
-
-		searchSection.createEl('h3', { text: 'Search for Podcasts' });
 
 		// Search input container
 		const searchContainer = searchSection.createDiv({ cls: 'subscribe-search-container' });
@@ -98,14 +149,17 @@ export class SubscribePodcastModal extends Modal {
 	private renderUrlSection(container: HTMLElement): void {
 		const urlSection = container.createDiv({ cls: 'subscribe-url-section' });
 
-		urlSection.createEl('h3', { text: 'Or Enter Feed URL Directly' });
+		urlSection.createEl('p', {
+			text: 'Enter the RSS or Atom feed URL of the podcast you want to subscribe to.',
+			cls: 'subscribe-url-desc'
+		});
 
 		new Setting(urlSection)
 			.setName('Feed URL')
-			.setDesc('Enter the RSS or Atom feed URL of the podcast')
+			.setDesc('Example: https://example.com/podcast/feed.xml')
 			.addText(text => {
 				text
-					.setPlaceholder('https://example.com/podcast/feed.xml')
+					.setPlaceholder('https://...')
 					.setValue(this.feedUrl)
 					.onChange(value => {
 						this.feedUrl = value;
@@ -121,12 +175,10 @@ export class SubscribePodcastModal extends Modal {
 
 		const subscribeBtn = buttonContainer.createEl('button', { text: 'Subscribe', cls: 'mod-cta' });
 		subscribeBtn.addEventListener('click', async () => {
-			if (this.selectedFeeds.size > 0) {
-				await this.handleSubscribeMultiple(Array.from(this.selectedFeeds));
-			} else if (this.feedUrl.trim()) {
+			if (this.feedUrl.trim()) {
 				await this.handleSubscribeByUrl(this.feedUrl.trim());
 			} else {
-				new Notice('Please select a podcast or enter a URL');
+				new Notice('Please enter a URL');
 			}
 		});
 	}

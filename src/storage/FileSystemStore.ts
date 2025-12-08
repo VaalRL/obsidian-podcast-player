@@ -59,7 +59,7 @@ export abstract class FileSystemStore<T> {
 	/**
 	 * Write data to a JSON file
 	 */
-	protected async writeJson<TData>(path: string, data: TData, createBackup = true): Promise<void> {
+	protected async writeJson<TData>(path: string, data: TData, createBackup = false): Promise<void> {
 		try {
 			const adapter = this.vault.adapter;
 

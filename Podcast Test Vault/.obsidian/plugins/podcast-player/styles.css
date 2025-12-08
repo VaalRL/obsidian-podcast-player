@@ -21,6 +21,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -134,7 +135,7 @@
    Progress Bar (Hand-Drawn Style)
    ========================================================================== */
 
-.progress-bar-container {
+.player-container .progress-bar-container {
     width: 100%;
     height: 14px;
     background-color: var(--background-modifier-border);
@@ -149,12 +150,12 @@
     /* Removed overflow: hidden to allow thumb to be visible */
 }
 
-.progress-bar-container:hover {
+.player-container .progress-bar-container:hover {
     transform: scale(1.01) rotate(-0.5deg);
     box-shadow: 3px 3px 0px var(--text-muted);
 }
 
-.progress-bar {
+.player-container .progress-bar {
     width: 100%;
     height: 100%;
     background: transparent;
@@ -164,7 +165,7 @@
     /* Ensure thumb is visible */
 }
 
-.progress-fill {
+.player-container .progress-fill {
     height: 100%;
     background-color: var(--interactive-accent);
     /* Simplified gradient for better visibility */
@@ -185,7 +186,7 @@
 /* Hand-drawn thumb - now using .progress-bar-thumb element instead of ::after */
 
 /* Unused but kept for compatibility */
-.progress-bar-thumb {
+.player-container .progress-bar-thumb {
     position: absolute;
     left: 0%;
     top: 50%;
@@ -1118,8 +1119,10 @@
    Advanced Controls (Volume & Speed)
    ========================================================================== */
 
-.advanced-controls-section {`r`n    display: flex;`r`n    flex-direction: column;
-    gap: var(--size-4-6);
+.advanced-controls-section {
+    display: flex;
+    flex-direction: row;
+    gap: var(--size-4-4);
     margin-top: var(--size-4-2);
     padding: 0 var(--size-4-2);
 }
@@ -1196,6 +1199,7 @@
     transform: scale(1.15);
     background: var(--interactive-accent);
 }
+
 /* ==========================================================================
    Progress Section Layout
    ========================================================================== */
@@ -1208,7 +1212,8 @@
     padding: 0 var(--size-4-2);
 }
 
-.current-time, .total-time {
+.current-time,
+.total-time {
     font-size: var(--font-ui-smaller);
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
@@ -1255,7 +1260,8 @@
 }
 
 .subscribe-result-artwork {
-    width: 40px !important; /* Smaller thumbnail size */
+    width: 40px !important;
+    /* Smaller thumbnail size */
     height: 40px !important;
     border-radius: var(--radius-s);
     object-fit: cover;
@@ -1482,4 +1488,123 @@
 
 .playlist-episode-item.drag-over {
     border-top: 2px solid var(--interactive-accent);
+}
+/* ==========================================================================
+   Subscribe Modal Tabs
+   ========================================================================== */
+
+.subscribe-modal-tabs {
+    display: flex;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-4);
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: var(--size-4-2);
+}
+
+.subscribe-modal-tab {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-2) var(--size-4-4);
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+}
+
+.subscribe-modal-tab:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.subscribe-modal-tab.active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.subscribe-url-desc {
+    color: var(--text-muted);
+    margin-bottom: var(--size-4-4);
+}
+
+/* ==========================================================================
+   Subscribe Modal Layout & Search
+   ========================================================================== */
+
+.subscribe-modal-content {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.subscribe-search-container {
+    display: flex;
+    gap: var(--size-4-2);
+    align-items: center;
+    margin-bottom: var(--size-4-4);
+}
+
+.subscribe-search-input {
+    flex: 1;
+    height: 36px;
+}
+
+.subscribe-search-button {
+    height: 36px;
+    padding: 0 var(--size-4-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.subscribe-search-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ==========================================================================
+   Fix for Lists tab font sizes to match Feeds tab
+   ========================================================================== */
+
+.playlist-title,
+.queue-title,
+.playlist-item-title,
+.playlist-episode-title,
+.queue-episode-title {
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+}
+
+.playlist-description,
+.playlist-item-description,
+.playlist-metadata,
+.playlist-item-metadata,
+.playlist-episode-duration,
+.queue-episode-duration {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+/* ==========================================================================
+   Compact Lists View (User Request)
+   ========================================================================== */
+
+.playlist-item {
+    padding: var(--size-4-2) !important;
+    min-height: auto !important;
+}
+
+.playlist-title,
+.queue-title,
+.playlist-item-title {
+    font-size: var(--font-ui-small) !important;
+    margin-bottom: 2px !important;
+}
+
+.playlist-description,
+.playlist-item-description,
+.playlist-metadata,
+.playlist-item-metadata {
+    font-size: var(--font-ui-smaller) !important;
 }

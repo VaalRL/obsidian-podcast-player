@@ -108,10 +108,33 @@ export class PlayerController {
 		this.engine.setEventHandlers(handlers);
 	}
 
+	private lastLoadTime = 0;
+	private loadingEpisodeId: string | null = null;
+
 	/**
 	 * Load and optionally play an episode
 	 */
 	async loadEpisode(episode: Episode, autoPlay = false, resumeFromSaved = true): Promise<void> {
+		const now = Date.now();
+		// Prevent duplicate loads of same episode within short timeframe
+		if (this.loadingEpisodeId === episode.id && now - this.lastLoadTime < 2000) {
+			logger.warn('Duplicate loadEpisode call ignored', episode.id);
+			return;
+		}
+
+		// Smart check: at this point, if we are already playing this episode, we don't need to reload
+		// This handles race conditions where UI might not have updated yet
+		if (this.currentEpisode?.id === episode.id && this.state.status !== 'error') {
+			logger.info('Episode already loaded, skipping reload', episode.id);
+			if (autoPlay && this.state.status !== 'playing') {
+				await this.play();
+			}
+			return;
+		}
+
+		this.lastLoadTime = now;
+		this.loadingEpisodeId = episode.id;
+
 		logger.methodEntry('PlayerController', 'loadEpisode', episode.id);
 
 		try {

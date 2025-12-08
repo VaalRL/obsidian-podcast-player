@@ -64,6 +64,19 @@ export class PodcastSidebarView extends ItemView {
 			})
 		);
 
+		// Listen for player state updates to refresh UI (e.g. play/pause icons)
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:player-state-updated', () => {
+				this.updateListIcons();
+			})
+		);
+
+		this.registerEvent(
+			(this.app.workspace as any).on('podcast:episode-changed', () => {
+				this.updateListIcons();
+			})
+		);
+
 		this.registerEvent(
 			(this.app.workspace as any).on('podcast:playlist-updated', async (playlistId: string) => {
 				if (this.selectedPlaylist && this.selectedPlaylist.id === playlistId) {
@@ -411,28 +424,36 @@ export class PodcastSidebarView extends ItemView {
 			renameBtn.addEventListener('click', () => this.handleRenameQueue());
 		}
 
-		// Mode toggle (only if not viewing details) - separate row below header
-		if (!this.selectedPodcast && !this.selectedPlaylist) {
-			const modeToggle = this.sidebarContentEl.createDiv({ cls: 'sidebar-mode-toggle' });
+		// Mode toggle - always visible to allow quick switching
+		const modeToggle = this.sidebarContentEl.createDiv({ cls: 'sidebar-mode-toggle' });
 
-			const podcastsBtn = modeToggle.createEl('button', {
-				text: 'Feeds',
-				cls: this.viewMode === 'podcasts' ? 'mode-active' : 'mode-inactive'
-			});
-			podcastsBtn.addEventListener('click', () => {
-				this.viewMode = 'podcasts';
-				this.render();
-			});
+		const podcastsBtn = modeToggle.createEl('button', {
+			text: 'Feeds',
+			cls: this.viewMode === 'podcasts' && !this.selectedPlaylist && !this.selectedQueue ? 'mode-active' : 'mode-inactive'
+		});
+		podcastsBtn.addEventListener('click', () => {
+			// Clear selection to go back to main list
+			this.selectedPodcast = null;
+			this.selectedPlaylist = null;
+			this.selectedQueue = null;
 
-			const playlistsBtn = modeToggle.createEl('button', {
-				text: 'Lists',
-				cls: this.viewMode === 'playlists' ? 'mode-active' : 'mode-inactive'
-			});
-			playlistsBtn.addEventListener('click', () => {
-				this.viewMode = 'playlists';
-				this.render();
-			});
-		}
+			this.viewMode = 'podcasts';
+			this.render();
+		});
+
+		const playlistsBtn = modeToggle.createEl('button', {
+			text: 'Lists',
+			cls: this.viewMode === 'playlists' || this.selectedPlaylist || this.selectedQueue ? 'mode-active' : 'mode-inactive'
+		});
+		playlistsBtn.addEventListener('click', () => {
+			// Clear selection to go back to main list
+			this.selectedPodcast = null;
+			this.selectedPlaylist = null;
+			this.selectedQueue = null;
+
+			this.viewMode = 'playlists';
+			this.render();
+		});
 	}
 
 	/**
@@ -926,7 +947,7 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	/**
-	 * Handle play playlist
+	 * Handle play playlist - resumes from last position or starts from beginning
 	 */
 	private async handlePlayPlaylist(playlist: Playlist): Promise<void> {
 		if (playlist.episodeIds.length === 0) {
@@ -935,13 +956,27 @@ export class PodcastSidebarView extends ItemView {
 		}
 
 		const episodeManager = this.plugin.getEpisodeManager();
-		const firstEpisodeId = playlist.episodeIds[0];
-		const firstEpisode = await episodeManager.getEpisodeWithProgress(firstEpisodeId);
+		const queueManager = this.plugin.getQueueManager();
 
-		if (firstEpisode) {
-			await this.handlePlayEpisode(firstEpisode, false, playlist);
+		// Check if there's an existing queue for this playlist with saved position
+		const allQueues = await queueManager.getAllQueues();
+		const existingQueue = allQueues.find(q => q.name === `Playlist: ${playlist.name}`);
+
+		let startIndex = 0;
+		if (existingQueue && existingQueue.currentIndex >= 0 && existingQueue.currentIndex < playlist.episodeIds.length) {
+			startIndex = existingQueue.currentIndex;
+		}
+
+		const episodeId = playlist.episodeIds[startIndex];
+		const episode = await episodeManager.getEpisodeWithProgress(episodeId);
+
+		if (episode) {
+			await this.handlePlayEpisode(episode, false, playlist);
+			if (startIndex > 0) {
+				new Notice(`Resuming playlist from episode ${startIndex + 1}`);
+			}
 		} else {
-			new Notice('Failed to load first episode of playlist');
+			new Notice('Failed to load episode from playlist');
 		}
 	}
 
@@ -964,19 +999,35 @@ export class PodcastSidebarView extends ItemView {
 					queue = await queueManager.createQueue(`Playlist: ${fromPlaylist.name}`);
 				}
 
-				// Set isPlaylist flag and sourceId
-				await queueManager.updateQueue(queue.id, { isPlaylist: true, sourceId: fromPlaylist.id });
+				// Check if we really need to update queue metadata
+				const needsUpdate = queue.isPlaylist !== true ||
+					queue.sourceId !== fromPlaylist.id ||
+					JSON.stringify(queue.episodeIds) !== JSON.stringify(fromPlaylist.episodeIds);
 
-				// Clear and repopulate queue with playlist episodes
-				await queueManager.clearQueue(queue.id);
-				for (const episodeId of fromPlaylist.episodeIds) {
-					await queueManager.addEpisode(queue.id, episodeId);
+				if (needsUpdate) {
+					const updates: any = {
+						isPlaylist: true,
+						sourceId: fromPlaylist.id
+					};
+
+					// Only update episodes if they are different
+					if (JSON.stringify(queue.episodeIds) !== JSON.stringify(fromPlaylist.episodeIds)) {
+						updates.episodeIds = fromPlaylist.episodeIds;
+					}
+
+					await queueManager.updateQueue(queue.id, updates);
 				}
 
 				// Find the index of the episode to play
 				const episodeIndex = fromPlaylist.episodeIds.indexOf(episode.id);
 				if (episodeIndex !== -1) {
+					// Update queue index
 					await queueManager.jumpTo(queue.id, episodeIndex);
+					// Load and play
+					await playerController.loadEpisode(episode, true);
+				} else {
+					// Fallback if episode not found in list (shouldn't happen)
+					await playerController.loadEpisode(episode, true);
 				}
 
 				// Set this as the current queue
@@ -1647,6 +1698,55 @@ export class PodcastSidebarView extends ItemView {
 		});
 	}
 
+
+
+	/**
+	 * Update play state icons without rebuilding the DOM
+	 */
+	private updateListIcons(): void {
+		try {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+			const currentId = state.currentEpisode?.id;
+			const isPlaying = state.status === 'playing';
+
+			// Target both playlist and queue items
+			const items = this.sidebarContentEl.querySelectorAll('.playlist-episode-item');
+			items.forEach((item) => {
+				const id = item.getAttribute('data-episode-id');
+
+				// Find action container - it might be .queue-episode-action
+				const actionEl = item.querySelector('.queue-episode-action');
+				if (!actionEl) return;
+
+				if (id === currentId) {
+					item.addClass('current');
+					actionEl.empty();
+
+					if (isPlaying) {
+						const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
+						setIcon(pauseIcon, 'pause');
+					} else {
+						// Current but paused - show play icon
+						const playIcon = actionEl.createDiv({ cls: 'icon-current' });
+						setIcon(playIcon, 'play');
+					}
+				} else {
+					item.removeClass('current');
+					actionEl.empty();
+
+					const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
+					setIcon(dragIcon, 'grip-vertical');
+
+					const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+					setIcon(playIcon, 'play');
+				}
+			});
+		} catch (error) {
+			console.error('Failed to update list icons:', error);
+		}
+	}
+
 	/**
 	 * Render playlist details (episodes)
 	 */
@@ -1699,7 +1799,16 @@ export class PodcastSidebarView extends ItemView {
 	 * Render a single episode item in playlist
 	 */
 	private renderPlaylistEpisodeItem(container: HTMLElement, episode: Episode, index: number): void {
-		const item = container.createDiv({ cls: 'playlist-episode-item' });
+		// Check if this episode is current and playing
+		const playerController = this.plugin.playerController;
+		const playerState = playerController.getState();
+		const isCurrent = playerState.currentEpisode?.id === episode.id;
+		const isPlaying = isCurrent && playerState.status === 'playing';
+
+		const item = container.createDiv({
+			cls: isCurrent ? 'playlist-episode-item current' : 'playlist-episode-item',
+			attr: { 'data-episode-id': episode.id }
+		});
 
 		// Drag and Drop
 		item.draggable = true;
@@ -1717,9 +1826,21 @@ export class PodcastSidebarView extends ItemView {
 			}
 		});
 
-		// Index
-		const indexEl = item.createDiv({ cls: 'playlist-episode-index' });
-		indexEl.textContent = `${index + 1}`;
+		// Action Icon (Drag/Play/Pause) - same as PlayerView queue
+		const actionEl = item.createDiv({ cls: 'queue-episode-action' });
+
+		if (isCurrent && isPlaying) {
+			// Currently playing episode - show pause icon only
+			const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
+			setIcon(pauseIcon, 'pause');
+		} else {
+			// All other episodes (including current but paused) - show drag handle, swap to play on hover
+			const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
+			setIcon(dragIcon, 'grip-vertical');
+
+			const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+			setIcon(playIcon, 'play');
+		}
 
 		// Info
 		const info = item.createDiv({ cls: 'playlist-episode-info' });
@@ -1730,18 +1851,6 @@ export class PodcastSidebarView extends ItemView {
 		if (episode.duration) {
 			metadata.createSpan({ text: this.formatDuration(episode.duration), cls: 'playlist-episode-duration' });
 		}
-
-		// Play button
-		const playBtn = item.createEl('button', {
-			cls: 'playlist-episode-play',
-			attr: { 'aria-label': 'Play episode' }
-		});
-		setIcon(playBtn, 'play');
-		playBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			// Pass the current playlist when playing from playlist
-			this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
-		});
 
 		// Delete button
 		const deleteBtn = item.createEl('button', {
@@ -1761,9 +1870,27 @@ export class PodcastSidebarView extends ItemView {
 			}
 		});
 
-		// Click to show episode details
-		item.addEventListener('click', () => {
-			this.handleEpisodeClick(episode);
+		// Click to play/pause
+		item.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			try {
+				const currentState = this.plugin.playerController.getState();
+				const isCurrentlyPlaying = currentState.currentEpisode?.id === episode.id;
+
+				if (isCurrentlyPlaying) {
+					// Current episode - toggle play/pause
+					if (currentState.status === 'playing') {
+						await this.plugin.playerController.pause();
+					} else {
+						await this.plugin.playerController.play();
+					}
+				} else {
+					// Other episodes - play the episode
+					this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
+				}
+			} catch (error) {
+				console.error('Failed to play/pause episode:', error);
+			}
 		});
 
 		// Context menu
@@ -1777,7 +1904,16 @@ export class PodcastSidebarView extends ItemView {
 	 * Render a single episode item in queue
 	 */
 	private renderQueueEpisodeItem(container: HTMLElement, episode: Episode, index: number): void {
-		const item = container.createDiv({ cls: 'playlist-episode-item' });
+		// Check if this episode is current and playing
+		const playerController = this.plugin.playerController;
+		const playerState = playerController.getState();
+		const isCurrent = playerState.currentEpisode?.id === episode.id;
+		const isPlaying = isCurrent && playerState.status === 'playing';
+
+		const item = container.createDiv({
+			cls: isCurrent ? 'playlist-episode-item current' : 'playlist-episode-item',
+			attr: { 'data-episode-id': episode.id }
+		});
 
 		// Drag and Drop
 		item.draggable = true;
@@ -1795,9 +1931,21 @@ export class PodcastSidebarView extends ItemView {
 			}
 		});
 
-		// Index
-		const indexEl = item.createDiv({ cls: 'playlist-episode-index' });
-		indexEl.textContent = `${index + 1}`;
+		// Action Icon (Drag/Play/Pause) - same as PlayerView queue
+		const actionEl = item.createDiv({ cls: 'queue-episode-action' });
+
+		if (isCurrent && isPlaying) {
+			// Currently playing episode - show pause icon only
+			const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
+			setIcon(pauseIcon, 'pause');
+		} else {
+			// All other episodes (including current but paused) - show drag handle, swap to play on hover
+			const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
+			setIcon(dragIcon, 'grip-vertical');
+
+			const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+			setIcon(playIcon, 'play');
+		}
 
 		// Info
 		const info = item.createDiv({ cls: 'playlist-episode-info' });
@@ -1808,17 +1956,6 @@ export class PodcastSidebarView extends ItemView {
 		if (episode.duration) {
 			metadata.createSpan({ text: this.formatDuration(episode.duration), cls: 'playlist-episode-duration' });
 		}
-
-		// Play button
-		const playBtn = item.createEl('button', {
-			cls: 'playlist-episode-play',
-			attr: { 'aria-label': 'Play episode' }
-		});
-		setIcon(playBtn, 'play');
-		playBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			this.handlePlayEpisode(episode);
-		});
 
 		// Delete button
 		const deleteBtn = item.createEl('button', {
@@ -1838,9 +1975,35 @@ export class PodcastSidebarView extends ItemView {
 			}
 		});
 
-		// Click to show episode details
-		item.addEventListener('click', () => {
-			this.handleEpisodeClick(episode);
+		// Click to play/pause
+		item.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			try {
+				const currentState = this.plugin.playerController.getState();
+				const isCurrentlyPlaying = currentState.currentEpisode?.id === episode.id;
+
+				if (isCurrentlyPlaying) {
+					// Current episode - toggle play/pause
+					if (currentState.status === 'playing') {
+						await this.plugin.playerController.pause();
+					} else {
+						await this.plugin.playerController.play();
+					}
+				} else {
+					// Other episodes - play the episode
+					if (this.selectedQueue) {
+						const queueManager = this.plugin.getQueueManager();
+						// Ensure this is the current queue
+						queueManager.setCurrentQueue(this.selectedQueue.id);
+						await queueManager.jumpTo(this.selectedQueue.id, index);
+						await this.plugin.playerController.loadEpisode(episode, true);
+					} else {
+						this.handlePlayEpisode(episode);
+					}
+				}
+			} catch (error) {
+				console.error('Failed to play/pause episode:', error);
+			}
 		});
 
 		// Context menu
