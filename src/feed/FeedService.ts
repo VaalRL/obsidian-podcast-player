@@ -67,7 +67,8 @@ export class FeedService {
 			useCache = true,
 			cacheTTL = 3600000, // 1 hour
 			timeout = 30000, // 30 seconds
-			userAgent = 'Obsidian Podcast Player',
+			// Use a browser-like user agent to avoid being blocked by some servers/CDNs (like Cloudflare)
+			userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 			etag,
 			lastModified,
 		} = options;
@@ -169,6 +170,7 @@ export class FeedService {
 					const headers: Record<string, string> = {
 						'User-Agent': userAgent,
 						Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+						'Accept-Language': 'en-US,en;q=0.9',
 					};
 
 					// Add conditional request headers
