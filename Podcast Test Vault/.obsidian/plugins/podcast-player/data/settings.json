@@ -9,5 +9,8 @@
   "autoDownload": false,
   "maxCacheEpisodes": 50,
   "feedUpdateInterval": 60,
-  "enableNotifications": true
+  "enableNotifications": true,
+  "dailyNoteInsertPosition": "bottom",
+  "dailyNoteFolderPath": "",
+  "dailyNoteDateFormat": "YYYY-MM-DD"
 }

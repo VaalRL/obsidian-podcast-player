@@ -7,6 +7,7 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { PluginSettings } from '../model';
+import { showConfirmModal } from './ConfirmModal';
 
 /**
  * PodcastPlayerSettingTab - Settings UI for the Podcast Player plugin
@@ -32,13 +33,16 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 		this.loadSettings();
 
 		// Header
-		containerEl.createEl('h2', { text: 'Podcast Player Settings' });
+		containerEl.createEl('h2', { text: 'Podcast Settings' });
 
 		// === Data Storage ===
 		this.addStorageSection(containerEl);
 
 		// === Default Playback Settings ===
 		this.addPlaybackSection(containerEl);
+
+		// === Daily Note Settings ===
+		this.addDailyNoteSection(containerEl);
 
 		// === Download & Cache ===
 		this.addCacheSection(containerEl);
@@ -54,6 +58,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// === Advanced ===
 		this.addAdvancedSection(containerEl);
+
+		// === Support ===
+		this.addSupportSection(containerEl);
 	}
 
 	/**
@@ -155,6 +162,54 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 						this.settings.defaultPlaybackSettings.skipOutroSeconds = seconds;
 						await this.saveSettings();
 					}
+				}));
+	}
+
+	/**
+	 * Add daily note settings section
+	 */
+	private addDailyNoteSection(containerEl: HTMLElement): void {
+		containerEl.createEl('h3', { text: 'Daily Note Integration' });
+		containerEl.createEl('p', {
+			text: 'Configure how podcast notes are added to your daily notes.',
+			cls: 'setting-item-description'
+		});
+
+		// Daily note folder path
+		new Setting(containerEl)
+			.setName('Daily note folder')
+			.setDesc('Folder where your daily notes are stored (leave empty for vault root)')
+			.addText(text => text
+				.setPlaceholder('e.g., Daily Notes')
+				.setValue(this.settings.dailyNoteFolderPath)
+				.onChange(async (value) => {
+					this.settings.dailyNoteFolderPath = value;
+					await this.saveSettings();
+				}));
+
+		// Daily note date format
+		new Setting(containerEl)
+			.setName('Daily note date format')
+			.setDesc('Date format for daily note filenames (uses moment.js format)')
+			.addText(text => text
+				.setPlaceholder('YYYY-MM-DD')
+				.setValue(this.settings.dailyNoteDateFormat)
+				.onChange(async (value) => {
+					this.settings.dailyNoteDateFormat = value || 'YYYY-MM-DD';
+					await this.saveSettings();
+				}));
+
+		// Note insert position
+		new Setting(containerEl)
+			.setName('Note insert position')
+			.setDesc('Where to insert podcast notes in your daily note')
+			.addDropdown(dropdown => dropdown
+				.addOption('top', 'Top of file')
+				.addOption('bottom', 'Bottom of file')
+				.setValue(this.settings.dailyNoteInsertPosition)
+				.onChange(async (value) => {
+					this.settings.dailyNoteInsertPosition = value as 'top' | 'bottom' | 'cursor';
+					await this.saveSettings();
 				}));
 	}
 
@@ -301,12 +356,62 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				.setButtonText('Reset')
 				.setWarning()
 				.onClick(async () => {
-					if (confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+					const confirmed = await showConfirmModal(this.app, {
+						title: 'Reset Settings',
+						message: 'Are you sure you want to reset all settings to their default values?\n\nThis cannot be undone.',
+						confirmText: 'Reset',
+						confirmClass: 'warning'
+					});
+
+					if (confirmed) {
 						await this.plugin.resetSettings();
-						this.display(); // Refresh the display
+						this.display();
 						new Notice('Settings reset to defaults');
 					}
 				}));
+
+		// Delete all data
+		new Setting(containerEl)
+			.setName('Delete all data')
+			.setDesc('Delete all subscriptions, playlists, queues, progress, and cache. This cannot be undone!')
+			.addButton(button => button
+				.setButtonText('Delete All')
+				.setWarning()
+				.onClick(async () => {
+					await this.deleteAllData();
+				}));
+	}
+
+	/**
+	 * Add support section with Buy Me A Coffee button
+	 */
+	private addSupportSection(containerEl: HTMLElement): void {
+		containerEl.createEl('h3', { text: 'Support' });
+
+		const supportDesc = containerEl.createDiv({ cls: 'setting-item-description' });
+		supportDesc.setText('If you find this plugin useful, consider supporting the development!');
+		supportDesc.style.marginBottom = 'var(--size-4-4)';
+
+		// Buy Me A Coffee button container
+		const buttonContainer = containerEl.createDiv({ cls: 'support-button-container' });
+		buttonContainer.style.display = 'flex';
+		buttonContainer.style.justifyContent = 'center';
+		buttonContainer.style.padding = 'var(--size-4-4)';
+
+		// Buy Me A Coffee link
+		const coffeeLink = buttonContainer.createEl('a', {
+			href: 'https://buymeacoffee.com/whoami885',
+			attr: { target: '_blank', rel: 'noopener noreferrer' }
+		});
+
+		// Buy Me A Coffee button element
+		const coffeeButton = coffeeLink.createEl('img', {
+			attr: {
+				src: 'https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png',
+				alt: 'Buy Me A Coffee',
+				style: 'height: 50px !important; width: auto !important;'
+			}
+		});
 	}
 
 	/**
@@ -523,5 +628,56 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 		};
 
 		input.click();
+	}
+
+	/**
+	 * Delete all plugin data
+	 */
+	private async deleteAllData(): Promise<void> {
+		// First confirmation with details
+		const firstConfirm = await showConfirmModal(this.app, {
+			title: 'Delete All Data',
+			message: 'WARNING: This will permanently delete ALL your podcast data including:\n\n• All podcast subscriptions\n• All playlists\n• All queues\n• All playback progress\n• All cached feeds and images\n• All backups\n\nThis action cannot be undone!',
+			confirmText: 'Continue',
+			confirmClass: 'warning'
+		});
+
+		if (!firstConfirm) {
+			return;
+		}
+
+		// Second confirmation requiring text input
+		const finalConfirm = await showConfirmModal(this.app, {
+			title: 'Final Confirmation',
+			message: 'You are about to permanently delete all podcast data.\n\nThis is your last chance to cancel.',
+			confirmText: 'Delete All',
+			confirmClass: 'destructive',
+			requireInput: 'DELETE',
+			inputPlaceholder: 'Type DELETE to confirm'
+		});
+
+		if (!finalConfirm) {
+			new Notice('Deletion cancelled');
+			return;
+		}
+
+		try {
+			new Notice('Deleting all data...');
+
+			const backupService = this.plugin.getBackupService();
+			const result = await backupService.deleteAllData();
+
+			if (result.success) {
+				new Notice(`All data deleted successfully (${result.deletedItems} items)`);
+			} else {
+				new Notice(`Data deleted with some errors: ${result.errors.join(', ')}`);
+			}
+
+			// Refresh the display
+			this.display();
+		} catch (error) {
+			console.error('Failed to delete all data:', error);
+			new Notice('Failed to delete all data');
+		}
 	}
 }

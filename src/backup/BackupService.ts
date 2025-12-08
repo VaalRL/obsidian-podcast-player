@@ -356,6 +356,140 @@ ${outlines}
 	}
 
 	/**
+	 * Delete all plugin data (subscriptions, progress, playlists, queues, cache, backups)
+	 * WARNING: This is destructive and cannot be undone!
+	 */
+	async deleteAllData(): Promise<{ success: boolean; deletedItems: number; errors: string[] }> {
+		logger.methodEntry('BackupService', 'deleteAllData');
+
+		const errors: string[] = [];
+		let deletedItems = 0;
+
+		// Clear subscriptions (podcasts and episodes)
+		try {
+			const podcasts = await this.subscriptionStore.getAllPodcasts();
+			for (const podcast of podcasts) {
+				await this.subscriptionStore.removePodcast(podcast.id);
+				deletedItems++;
+			}
+			logger.info('Cleared all subscriptions');
+		} catch (error) {
+			const msg = 'Failed to clear subscriptions';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Also clear any remaining files in subscriptions folder
+		try {
+			const subscriptionFiles = await this.pathManager.listFiles('subscriptions');
+			for (const filePath of subscriptionFiles) {
+				await this.vault.adapter.remove(filePath);
+				deletedItems++;
+			}
+			logger.info('Cleared subscription files');
+		} catch (error) {
+			const msg = 'Failed to clear subscription files';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Clear progress
+		try {
+			await this.progressStore.clearAll();
+			deletedItems++;
+			logger.info('Cleared all progress');
+		} catch (error) {
+			const msg = 'Failed to clear progress';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Also clear any remaining files in progress folder
+		try {
+			const progressFiles = await this.pathManager.listFiles('progress');
+			for (const filePath of progressFiles) {
+				await this.vault.adapter.remove(filePath);
+				deletedItems++;
+			}
+			logger.info('Cleared progress files');
+		} catch (error) {
+			const msg = 'Failed to clear progress files';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Clear playlists
+		try {
+			await this.playlistStore.clear();
+			deletedItems++;
+			logger.info('Cleared all playlists');
+		} catch (error) {
+			const msg = 'Failed to clear playlists';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Clear queues
+		try {
+			await this.queueStore.clear();
+			deletedItems++;
+			logger.info('Cleared all queues');
+		} catch (error) {
+			const msg = 'Failed to clear queues';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Clear backups
+		try {
+			const backupFiles = await this.pathManager.listFiles('backups');
+			for (const filePath of backupFiles) {
+				await this.vault.adapter.remove(filePath);
+				deletedItems++;
+			}
+			logger.info('Cleared all backups');
+		} catch (error) {
+			const msg = 'Failed to clear backups';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		// Clear cache (feeds and images)
+		try {
+			const cacheFeeds = await this.pathManager.listFiles('cacheFeed');
+			for (const filePath of cacheFeeds) {
+				await this.vault.adapter.remove(filePath);
+				deletedItems++;
+			}
+			logger.info('Cleared feed cache');
+		} catch (error) {
+			const msg = 'Failed to clear feed cache';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		try {
+			const cacheImages = await this.pathManager.listFiles('cacheImages');
+			for (const filePath of cacheImages) {
+				await this.vault.adapter.remove(filePath);
+				deletedItems++;
+			}
+			logger.info('Cleared image cache');
+		} catch (error) {
+			const msg = 'Failed to clear image cache';
+			logger.error(msg, error);
+			errors.push(msg);
+		}
+
+		logger.methodExit('BackupService', 'deleteAllData');
+		return {
+			success: errors.length === 0,
+			deletedItems,
+			errors
+		};
+	}
+
+	/**
 	 * Escape special XML characters
 	 */
 	private escapeXml(str: string): string {

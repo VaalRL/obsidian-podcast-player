@@ -24,6 +24,7 @@ export class SubscribePodcastModal extends Modal {
 	private currentPage = 0;
 	private readonly resultsPerPage = 5;
 	private searchResultsContainer: HTMLElement | null = null;
+	private searchButtonContainer: HTMLElement | null = null;
 	private feedUrl = '';
 	private feedUrlInput: HTMLInputElement | null = null;
 
@@ -33,8 +34,10 @@ export class SubscribePodcastModal extends Modal {
 		this.onSubmit = onSubmit;
 	}
 
-	private activeTab: 'search' | 'url' = 'search';
+	private activeTab: 'search' | 'url' | 'file' = 'search';
 	private contentContainer: HTMLElement | null = null;
+	private opmlFeeds: { text: string; xmlUrl: string }[] = [];
+	private selectedOpmlFeeds: Set<string> = new Set();
 
 	async onOpen() {
 		const { contentEl } = this;
@@ -80,12 +83,26 @@ export class SubscribePodcastModal extends Modal {
 			this.updateTabStyles(tabsContainer);
 			this.renderContent();
 		};
+
+		const fileTab = tabsContainer.createEl('button', {
+			text: 'From File',
+			cls: 'subscribe-modal-tab'
+		});
+		if (this.activeTab === 'file') fileTab.addClass('active');
+
+		fileTab.onclick = () => {
+			if (this.activeTab === 'file') return;
+			this.activeTab = 'file';
+			this.updateTabStyles(tabsContainer);
+			this.renderContent();
+		};
 	}
 
 	private updateTabStyles(tabsContainer: HTMLElement) {
 		const tabs = tabsContainer.querySelectorAll('.subscribe-modal-tab');
 		tabs[0].className = `subscribe-modal-tab ${this.activeTab === 'search' ? 'active' : ''}`;
 		tabs[1].className = `subscribe-modal-tab ${this.activeTab === 'url' ? 'active' : ''}`;
+		tabs[2].className = `subscribe-modal-tab ${this.activeTab === 'file' ? 'active' : ''}`;
 	}
 
 	private renderContent() {
@@ -98,8 +115,10 @@ export class SubscribePodcastModal extends Modal {
 			if (this.searchResults.length > 0) {
 				this.renderSearchResults();
 			}
-		} else {
+		} else if (this.activeTab === 'url') {
 			this.renderUrlSection(this.contentContainer);
+		} else if (this.activeTab === 'file') {
+			this.renderFileSection(this.contentContainer);
 		}
 	}
 
@@ -141,6 +160,34 @@ export class SubscribePodcastModal extends Modal {
 
 		// Search results container
 		this.searchResultsContainer = searchSection.createDiv({ cls: 'subscribe-search-results' });
+
+		// Button container (Cancel + Subscribe)
+		this.searchButtonContainer = searchSection.createDiv({ cls: 'subscribe-search-buttons' });
+		this.renderSearchButtons();
+	}
+
+	/**
+	 * Render the search action buttons (Cancel + Subscribe)
+	 */
+	private renderSearchButtons(): void {
+		if (!this.searchButtonContainer) return;
+		this.searchButtonContainer.empty();
+
+		const cancelBtn = this.searchButtonContainer.createEl('button', {
+			text: 'Cancel'
+		});
+		cancelBtn.addEventListener('click', () => this.close());
+
+		const subscribeBtn = this.searchButtonContainer.createEl('button', {
+			text: `Subscribe${this.selectedFeeds.size > 0 ? ` (${this.selectedFeeds.size})` : ''}`,
+			cls: 'mod-cta'
+		});
+		subscribeBtn.disabled = this.selectedFeeds.size === 0;
+		subscribeBtn.addEventListener('click', async () => {
+			if (this.selectedFeeds.size > 0) {
+				await this.handleSubscribeMultiple(Array.from(this.selectedFeeds));
+			}
+		});
 	}
 
 	/**
@@ -181,6 +228,196 @@ export class SubscribePodcastModal extends Modal {
 				new Notice('Please enter a URL');
 			}
 		});
+	}
+
+	/**
+	 * Render the file import section (OPML)
+	 */
+	private renderFileSection(container: HTMLElement): void {
+		const fileSection = container.createDiv({ cls: 'subscribe-file-section' });
+
+		fileSection.createEl('p', {
+			text: 'Import podcasts from an OPML file exported from another podcast app.',
+			cls: 'subscribe-file-desc'
+		});
+
+		// File input container
+		const fileInputContainer = fileSection.createDiv({ cls: 'subscribe-file-input-container' });
+
+		const fileInput = fileInputContainer.createEl('input', {
+			type: 'file',
+			cls: 'subscribe-file-input',
+			attr: { accept: '.opml,.xml' }
+		});
+
+		const selectFileBtn = fileInputContainer.createEl('button', {
+			text: 'Select OPML File',
+			cls: 'subscribe-file-select-button'
+		});
+		setIcon(selectFileBtn, 'file-up');
+
+		selectFileBtn.addEventListener('click', () => {
+			fileInput.click();
+		});
+
+		fileInput.addEventListener('change', async (e) => {
+			const target = e.target as HTMLInputElement;
+			const file = target.files?.[0];
+			if (file) {
+				await this.handleOpmlFile(file, fileSection);
+			}
+		});
+
+		// Results container for parsed feeds
+		const resultsContainer = fileSection.createDiv({ cls: 'subscribe-opml-results' });
+
+		// If we already have parsed feeds, render them
+		if (this.opmlFeeds.length > 0) {
+			this.renderOpmlResults(resultsContainer);
+		}
+
+		// Buttons container
+		const buttonContainer = fileSection.createDiv({ cls: 'subscribe-file-buttons' });
+
+		buttonContainer.createEl('button', { text: 'Cancel' })
+			.addEventListener('click', () => this.close());
+
+		const subscribeBtn = buttonContainer.createEl('button', {
+			text: `Subscribe${this.selectedOpmlFeeds.size > 0 ? ` (${this.selectedOpmlFeeds.size})` : ''}`,
+			cls: 'mod-cta'
+		});
+		subscribeBtn.disabled = this.selectedOpmlFeeds.size === 0;
+		subscribeBtn.addEventListener('click', async () => {
+			if (this.selectedOpmlFeeds.size > 0) {
+				await this.handleSubscribeMultiple(Array.from(this.selectedOpmlFeeds));
+			}
+		});
+	}
+
+	/**
+	 * Handle OPML file parsing
+	 */
+	private async handleOpmlFile(file: File, container: HTMLElement): Promise<void> {
+		try {
+			const content = await file.text();
+			const parser = new DOMParser();
+			const doc = parser.parseFromString(content, 'text/xml');
+
+			// Check for parsing errors
+			const parseError = doc.querySelector('parsererror');
+			if (parseError) {
+				new Notice('Invalid OPML file: Unable to parse XML');
+				return;
+			}
+
+			// Parse outline elements
+			const outlines = doc.querySelectorAll('outline[xmlUrl]');
+			this.opmlFeeds = [];
+			this.selectedOpmlFeeds.clear();
+
+			outlines.forEach((outline) => {
+				const text = outline.getAttribute('text') || 'Unknown Podcast';
+				const xmlUrl = outline.getAttribute('xmlUrl');
+				if (xmlUrl) {
+					this.opmlFeeds.push({ text, xmlUrl });
+					// Select all by default
+					this.selectedOpmlFeeds.add(xmlUrl);
+				}
+			});
+
+			if (this.opmlFeeds.length === 0) {
+				new Notice('No podcast feeds found in the OPML file');
+				return;
+			}
+
+			new Notice(`Found ${this.opmlFeeds.length} podcasts in OPML file`);
+
+			// Re-render the file section to show results
+			this.renderContent();
+
+		} catch (error) {
+			console.error('Failed to parse OPML file:', error);
+			new Notice('Failed to read the OPML file');
+		}
+	}
+
+	/**
+	 * Render parsed OPML results
+	 */
+	private renderOpmlResults(container: HTMLElement): void {
+		container.empty();
+
+		// Header with select all/none buttons
+		const header = container.createDiv({ cls: 'subscribe-opml-header' });
+		header.createEl('span', {
+			text: `${this.opmlFeeds.length} podcasts found`,
+			cls: 'subscribe-opml-count'
+		});
+
+		const headerActions = header.createDiv({ cls: 'subscribe-opml-header-actions' });
+
+		const selectAllBtn = headerActions.createEl('button', {
+			text: 'Select All',
+			cls: 'subscribe-opml-action-btn'
+		});
+		selectAllBtn.addEventListener('click', () => {
+			this.opmlFeeds.forEach(feed => this.selectedOpmlFeeds.add(feed.xmlUrl));
+			this.renderContent();
+		});
+
+		const selectNoneBtn = headerActions.createEl('button', {
+			text: 'Select None',
+			cls: 'subscribe-opml-action-btn'
+		});
+		selectNoneBtn.addEventListener('click', () => {
+			this.selectedOpmlFeeds.clear();
+			this.renderContent();
+		});
+
+		// Results list
+		const resultsList = container.createDiv({ cls: 'subscribe-opml-list' });
+
+		for (const feed of this.opmlFeeds) {
+			const item = resultsList.createDiv({ cls: 'subscribe-opml-item' });
+			if (this.selectedOpmlFeeds.has(feed.xmlUrl)) {
+				item.addClass('selected');
+			}
+
+			// Checkbox
+			const checkbox = item.createEl('input', {
+				type: 'checkbox',
+				cls: 'subscribe-opml-checkbox'
+			});
+			checkbox.checked = this.selectedOpmlFeeds.has(feed.xmlUrl);
+
+			// Feed info
+			const info = item.createDiv({ cls: 'subscribe-opml-info' });
+			info.createEl('span', { text: feed.text, cls: 'subscribe-opml-title' });
+			info.createEl('span', { text: feed.xmlUrl, cls: 'subscribe-opml-url' });
+
+			const toggleSelection = () => {
+				if (this.selectedOpmlFeeds.has(feed.xmlUrl)) {
+					this.selectedOpmlFeeds.delete(feed.xmlUrl);
+					item.removeClass('selected');
+					checkbox.checked = false;
+				} else {
+					this.selectedOpmlFeeds.add(feed.xmlUrl);
+					item.addClass('selected');
+					checkbox.checked = true;
+				}
+				// Update button
+				this.renderContent();
+			};
+
+			checkbox.addEventListener('click', (e) => {
+				e.stopPropagation();
+				toggleSelection();
+			});
+
+			item.addEventListener('click', () => {
+				toggleSelection();
+			});
+		}
 	}
 
 	/**
@@ -334,6 +571,8 @@ export class SubscribePodcastModal extends Modal {
 				item.addClass('selected');
 				checkbox.checked = true;
 			}
+			// Update subscribe button state
+			this.renderSearchButtons();
 		};
 
 		checkbox.addEventListener('click', (e) => {
@@ -356,11 +595,12 @@ export class SubscribePodcastModal extends Modal {
 		const totalPages = Math.ceil(this.searchResults.length / this.resultsPerPage);
 		const pagination = this.searchResultsContainer.createDiv({ cls: 'subscribe-pagination' });
 
-		// Previous button
+		// Previous button (arrow icon)
 		const prevBtn = pagination.createEl('button', {
-			text: '← Previous',
-			cls: 'subscribe-pagination-button'
+			cls: 'subscribe-pagination-button',
+			attr: { 'aria-label': 'Previous page' }
 		});
+		setIcon(prevBtn, 'chevron-left');
 		prevBtn.disabled = this.currentPage === 0;
 		prevBtn.addEventListener('click', () => {
 			if (this.currentPage > 0) {
@@ -375,11 +615,12 @@ export class SubscribePodcastModal extends Modal {
 			cls: 'subscribe-pagination-info'
 		});
 
-		// Next button
+		// Next button (arrow icon)
 		const nextBtn = pagination.createEl('button', {
-			text: 'Next →',
-			cls: 'subscribe-pagination-button'
+			cls: 'subscribe-pagination-button',
+			attr: { 'aria-label': 'Next page' }
 		});
+		setIcon(nextBtn, 'chevron-right');
 		nextBtn.disabled = this.currentPage >= totalPages - 1;
 		nextBtn.addEventListener('click', () => {
 			if (this.currentPage < totalPages - 1) {
@@ -515,8 +756,11 @@ export class SubscribePodcastModal extends Modal {
 		this.searchResults = [];
 		this.currentPage = 0;
 		this.searchResultsContainer = null;
+		this.searchButtonContainer = null;
 		this.feedUrl = '';
 		this.feedUrlInput = null;
 		this.selectedFeeds.clear();
+		this.opmlFeeds = [];
+		this.selectedOpmlFeeds.clear();
 	}
 }

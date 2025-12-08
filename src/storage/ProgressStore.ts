@@ -410,4 +410,18 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 
 		logger.methodExit('ProgressStore', 'importProgress');
 	}
+
+	/**
+	 * Clear all progress data
+	 */
+	async clearAll(): Promise<void> {
+		logger.methodEntry('ProgressStore', 'clearAll');
+
+		await this.save({
+			progress: [],
+			version: ProgressStore.CURRENT_VERSION,
+		});
+
+		logger.methodExit('ProgressStore', 'clearAll');
+	}
 }

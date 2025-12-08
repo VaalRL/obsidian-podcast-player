@@ -947,7 +947,7 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	/**
-	 * Handle play playlist - resumes from last position or starts from beginning
+	 * Handle play playlist - starts from beginning
 	 */
 	private async handlePlayPlaylist(playlist: Playlist): Promise<void> {
 		if (playlist.episodeIds.length === 0) {
@@ -956,25 +956,13 @@ export class PodcastSidebarView extends ItemView {
 		}
 
 		const episodeManager = this.plugin.getEpisodeManager();
-		const queueManager = this.plugin.getQueueManager();
 
-		// Check if there's an existing queue for this playlist with saved position
-		const allQueues = await queueManager.getAllQueues();
-		const existingQueue = allQueues.find(q => q.name === `Playlist: ${playlist.name}`);
-
-		let startIndex = 0;
-		if (existingQueue && existingQueue.currentIndex >= 0 && existingQueue.currentIndex < playlist.episodeIds.length) {
-			startIndex = existingQueue.currentIndex;
-		}
-
-		const episodeId = playlist.episodeIds[startIndex];
+		// Start from the first episode
+		const episodeId = playlist.episodeIds[0];
 		const episode = await episodeManager.getEpisodeWithProgress(episodeId);
 
 		if (episode) {
 			await this.handlePlayEpisode(episode, false, playlist);
-			if (startIndex > 0) {
-				new Notice(`Resuming playlist from episode ${startIndex + 1}`);
-			}
 		} else {
 			new Notice('Failed to load episode from playlist');
 		}
@@ -988,50 +976,18 @@ export class PodcastSidebarView extends ItemView {
 			const playerController = this.plugin.playerController;
 			const queueManager = this.plugin.getQueueManager();
 
-			// If playing from a playlist, create/update queue with playlist episodes
+			// If playing from a playlist, play directly without creating a queue
 			if (fromPlaylist) {
-				// Find or create a queue with the playlist name
-				const allQueues = await queueManager.getAllQueues();
-				let queue = allQueues.find(q => q.name === `Playlist: ${fromPlaylist.name}`);
-
-				if (!queue) {
-					// Create new queue for this playlist
-					queue = await queueManager.createQueue(`Playlist: ${fromPlaylist.name}`);
-				}
-
-				// Check if we really need to update queue metadata
-				const needsUpdate = queue.isPlaylist !== true ||
-					queue.sourceId !== fromPlaylist.id ||
-					JSON.stringify(queue.episodeIds) !== JSON.stringify(fromPlaylist.episodeIds);
-
-				if (needsUpdate) {
-					const updates: any = {
-						isPlaylist: true,
-						sourceId: fromPlaylist.id
-					};
-
-					// Only update episodes if they are different
-					if (JSON.stringify(queue.episodeIds) !== JSON.stringify(fromPlaylist.episodeIds)) {
-						updates.episodeIds = fromPlaylist.episodeIds;
-					}
-
-					await queueManager.updateQueue(queue.id, updates);
-				}
-
-				// Find the index of the episode to play
+				// Find the index of the episode in the playlist
 				const episodeIndex = fromPlaylist.episodeIds.indexOf(episode.id);
-				if (episodeIndex !== -1) {
-					// Update queue index
-					await queueManager.jumpTo(queue.id, episodeIndex);
-					// Load and play
-					await playerController.loadEpisode(episode, true);
-				} else {
-					// Fallback if episode not found in list (shouldn't happen)
-					await playerController.loadEpisode(episode, true);
-				}
 
-				// Set this as the current queue
-				queueManager.setCurrentQueue(queue.id);
+				// Set the playlist in PlayerController for prev/next navigation
+				playerController.setCurrentPlaylist(fromPlaylist, episodeIndex >= 0 ? episodeIndex : 0);
+
+				// Load and play the episode - no queue creation
+				await playerController.loadEpisode(episode, true, true);
+				new Notice(`Now playing: ${episode.title}`);
+				return;
 			} else if (addToQueue) {
 				// Get or create default queue
 				let queue = await queueManager.getCurrentQueue();

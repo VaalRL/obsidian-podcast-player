@@ -13,13 +13,14 @@
 .podcast-sidebar-view,
 .podcast-player-view,
 .playlist-queue-view {
-    opacity: 0;
+    opacity: 1 !important;
+    pointer-events: auto !important;
     animation: fadeIn 0.2s ease-in forwards;
 }
 
 @keyframes fadeIn {
     from {
-        opacity: 0;
+        opacity: 0.8;
     }
 
     to {
@@ -32,7 +33,7 @@
 .podcast-player-content,
 .playlist-queue-content {
     min-height: 200px;
-    will-change: contents;
+    pointer-events: auto !important;
 }
 
 /* ==========================================================================
@@ -510,10 +511,23 @@
    Empty States
    ========================================================================== */
 
+.empty-state {
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-muted);
+    pointer-events: none !important;
+}
+
+.empty-state-hint {
+    font-size: var(--font-ui-smaller);
+    margin-top: var(--size-4-2);
+}
+
 .queue-empty-state {
     text-align: center;
     padding: var(--size-4-4);
     color: var(--text-muted);
+    pointer-events: none !important;
 }
 
 .queue-empty-hint {
@@ -1489,6 +1503,7 @@
 .playlist-episode-item.drag-over {
     border-top: 2px solid var(--interactive-accent);
 }
+
 /* ==========================================================================
    Subscribe Modal Tabs
    ========================================================================== */
@@ -1607,4 +1622,341 @@
 .playlist-metadata,
 .playlist-item-metadata {
     font-size: var(--font-ui-smaller) !important;
+}
+
+/* ==========================================================================
+   Subscribe Modal Pagination
+   ========================================================================== */
+
+.subscribe-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-4-4);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-pagination-button {
+    background: transparent;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-normal);
+    transition: all 0.2s;
+}
+
+.subscribe-pagination-button:hover:not(:disabled) {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+    color: var(--interactive-accent);
+}
+
+.subscribe-pagination-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.subscribe-pagination-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.subscribe-pagination-info {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    min-width: 100px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Subscribe Modal Search Buttons
+   ========================================================================== */
+
+.subscribe-search-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-search-buttons button {
+    min-width: 80px;
+}
+
+.subscribe-search-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Subscribe Modal File Import (OPML)
+   ========================================================================== */
+
+.subscribe-file-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-3);
+}
+
+.subscribe-file-desc {
+    color: var(--text-muted);
+    margin: 0 0 var(--size-4-2) 0;
+}
+
+.subscribe-file-input-container {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+}
+
+.subscribe-file-input {
+    display: none;
+}
+
+.subscribe-file-select-button {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    padding: var(--size-4-2) var(--size-4-4);
+    cursor: pointer;
+}
+
+.subscribe-file-select-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+.subscribe-file-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-file-buttons button {
+    min-width: 80px;
+}
+
+.subscribe-file-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* OPML Results */
+.subscribe-opml-results {
+    flex: 1;
+    min-height: 0;
+}
+
+.subscribe-opml-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--size-4-2) 0;
+    margin-bottom: var(--size-4-2);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-opml-count {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.subscribe-opml-header-actions {
+    display: flex;
+    gap: var(--size-4-2);
+}
+
+.subscribe-opml-action-btn {
+    font-size: var(--font-ui-smaller);
+    padding: var(--size-4-1) var(--size-4-2);
+    background: transparent;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.subscribe-opml-action-btn:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.subscribe-opml-list {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+}
+
+.subscribe-opml-item {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    padding: var(--size-4-2);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subscribe-opml-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.subscribe-opml-item.selected {
+    background-color: var(--background-modifier-active-hover);
+    border-color: var(--interactive-accent);
+}
+
+.subscribe-opml-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.subscribe-opml-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.subscribe-opml-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.subscribe-opml-url {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Player Info Button
+   ========================================================================== */
+
+.episode-title-container {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+}
+
+.episode-title-container .episode-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-info-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.player-info-button:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.player-info-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==========================================================================
+   Add Note Modal
+   ========================================================================== */
+
+.add-note-modal {
+    padding: var(--size-4-4);
+}
+
+.add-note-modal h2 {
+    margin-top: 0;
+    margin-bottom: var(--size-4-4);
+}
+
+.add-note-context {
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    margin-bottom: var(--size-4-4);
+}
+
+.add-note-context p {
+    margin: var(--size-4-1) 0;
+    font-size: var(--font-ui-small);
+}
+
+.add-note-podcast {
+    color: var(--text-muted);
+}
+
+.add-note-episode {
+    color: var(--text-normal);
+    font-weight: var(--font-medium);
+}
+
+.add-note-timestamp {
+    color: var(--text-accent);
+    font-family: var(--font-monospace);
+}
+
+.add-note-input-container {
+    margin-bottom: var(--size-4-4);
+}
+
+.add-note-label {
+    display: block;
+    margin-bottom: var(--size-4-2);
+    font-weight: var(--font-medium);
+}
+
+.add-note-textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+}
+
+.add-note-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+}
+
+/* Add Note Button in Player */
+.player-button-add-note {
+    margin-left: var(--size-4-2);
 }

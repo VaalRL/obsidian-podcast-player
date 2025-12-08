@@ -5,10 +5,12 @@
  * Displays current episode, playback controls, and progress.
  */
 
-import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { PlaybackState, Queue, Episode } from '../model';
+import { PlaybackState, Queue, Episode, Playlist } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
+import { EpisodeDetailModal } from './EpisodeDetailModal';
+import { AddNoteModal } from './AddNoteModal';
 
 export const PLAYER_VIEW_TYPE = 'podcast-player-view';
 
@@ -21,6 +23,7 @@ export class PlayerView extends ItemView {
 	private updateInterval: number | null = null;
 	private currentQueueId: string | null = null;
 	private isDraggingProgress: boolean = false;
+	private lastPlaylistStateKey: string = 'queue';
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -145,11 +148,23 @@ export class PlayerView extends ItemView {
 		});
 		thumbnail.style.display = 'none';
 
-		// Placeholder for now - will integrate with PlayerController later
-		const title = infoSection.createEl('h3', {
+		// Title container with info button
+		const titleContainer = infoSection.createDiv({ cls: 'episode-title-container' });
+
+		// Episode title
+		const title = titleContainer.createEl('h3', {
 			text: 'No episode playing',
 			cls: 'episode-title'
 		});
+
+		// Info button to view episode details
+		const infoBtn = titleContainer.createEl('button', {
+			cls: 'player-info-button',
+			attr: { 'aria-label': 'View episode details' }
+		});
+		setIcon(infoBtn, 'info');
+		infoBtn.style.display = 'none'; // Hidden until episode is loaded
+		infoBtn.addEventListener('click', () => this.handleShowEpisodeDetails());
 
 		const podcast = infoSection.createEl('p', {
 			text: 'Select a podcast to start',
@@ -158,6 +173,18 @@ export class PlayerView extends ItemView {
 
 		const metadata = infoSection.createDiv({ cls: 'episode-metadata' });
 		metadata.createSpan({ text: '--:--', cls: 'episode-duration' });
+	}
+
+	/**
+	 * Handle showing episode details modal
+	 */
+	private handleShowEpisodeDetails(): void {
+		const playerController = this.plugin.playerController;
+		const currentEpisode = playerController.getCurrentEpisode();
+
+		if (currentEpisode) {
+			new EpisodeDetailModal(this.app, this.plugin, currentEpisode).open();
+		}
 	}
 
 	/**
@@ -205,6 +232,14 @@ export class PlayerView extends ItemView {
 		});
 		setIcon(nextBtn, 'skip-forward');
 		nextBtn.addEventListener('click', () => this.handleNext());
+
+		// Add to Note button
+		const addNoteBtn = controlsSection.createEl('button', {
+			cls: 'player-button player-button-add-note',
+			attr: { 'aria-label': 'Add note to daily note' }
+		});
+		setIcon(addNoteBtn, 'file-plus');
+		addNoteBtn.addEventListener('click', () => this.handleAddNote());
 	}
 
 
@@ -418,7 +453,12 @@ export class PlayerView extends ItemView {
 
 			if (state.status === 'playing') {
 				await playerController.pause();
-			} else if (state.status === 'paused' || state.status === 'stopped') {
+			} else if (state.status === 'paused') {
+				await playerController.play();
+			} else if (state.status === 'stopped' && !state.currentEpisode) {
+				// No episode loaded - try to play from first queue's first episode
+				await this.playFromFirstQueue();
+			} else if (state.status === 'stopped') {
 				await playerController.play();
 			}
 		} catch (error) {
@@ -427,10 +467,57 @@ export class PlayerView extends ItemView {
 	}
 
 	/**
+	 * Try to play from the first queue's first episode
+	 */
+	private async playFromFirstQueue(): Promise<void> {
+		try {
+			const queueManager = this.plugin.getQueueManager();
+			const allQueues = await queueManager.getAllQueues();
+
+			if (allQueues.length === 0) {
+				console.log('No queues available');
+				return;
+			}
+
+			// Find the first queue with episodes
+			for (const queue of allQueues) {
+				if (queue.episodeIds.length > 0) {
+					const firstEpisodeId = queue.episodeIds[0];
+
+					// Set this queue as current
+					queueManager.setCurrentQueue(queue.id);
+					await queueManager.jumpTo(queue.id, 0);
+					this.currentQueueId = queue.id;
+
+					// Load and play the episode
+					await this.loadEpisodeById(firstEpisodeId);
+					return;
+				}
+			}
+
+			console.log('No episodes in any queue');
+		} catch (error) {
+			console.error('Failed to play from first queue:', error);
+		}
+	}
+
+	/**
 	 * Handle previous episode button click
 	 */
 	private async handlePrevious(): Promise<void> {
 		try {
+			const playerController = this.plugin.playerController;
+
+			// Check if playing from playlist first
+			if (playerController.isPlayingFromPlaylist()) {
+				const previousEpisodeId = playerController.getPreviousPlaylistEpisodeId();
+				if (previousEpisodeId) {
+					await this.loadEpisodeById(previousEpisodeId);
+				}
+				return;
+			}
+
+			// Fallback to queue navigation
 			if (!this.currentQueueId) {
 				console.log('No queue selected');
 				return;
@@ -453,6 +540,18 @@ export class PlayerView extends ItemView {
 	 */
 	private async handleNext(): Promise<void> {
 		try {
+			const playerController = this.plugin.playerController;
+
+			// Check if playing from playlist first
+			if (playerController.isPlayingFromPlaylist()) {
+				const nextEpisodeId = playerController.getNextPlaylistEpisodeId();
+				if (nextEpisodeId) {
+					await this.loadEpisodeById(nextEpisodeId);
+				}
+				return;
+			}
+
+			// Fallback to queue navigation
 			if (!this.currentQueueId) {
 				console.log('No queue selected');
 				return;
@@ -468,6 +567,42 @@ export class PlayerView extends ItemView {
 		} catch (error) {
 			console.error('Failed to go to next episode:', error);
 		}
+	}
+
+	/**
+	 * Handle add note button click
+	 */
+	private async handleAddNote(): Promise<void> {
+		const playerController = this.plugin.playerController;
+		const currentEpisode = playerController.getCurrentEpisode();
+
+		if (!currentEpisode) {
+			new Notice('No episode is currently playing');
+			return;
+		}
+
+		// Get current playback position
+		const currentPosition = playerController.getCurrentPosition();
+
+		// Get podcast info
+		let podcast = null;
+		try {
+			podcast = await this.plugin.getSubscriptionStore().getPodcast(currentEpisode.podcastId);
+		} catch (error) {
+			console.error('Failed to get podcast info:', error);
+		}
+
+		// Open the add note modal
+		new AddNoteModal(
+			this.app,
+			this.plugin,
+			currentEpisode,
+			podcast,
+			currentPosition,
+			(note: string) => {
+				console.log('Note added:', note);
+			}
+		).open();
 	}
 
 	/**
@@ -600,10 +735,12 @@ export class PlayerView extends ItemView {
 			const podcastEl = this.playerContentEl.querySelector('.podcast-name') as HTMLElement;
 			const durationEl = this.playerContentEl.querySelector('.episode-duration') as HTMLElement;
 			const thumbnailEl = this.playerContentEl.querySelector('.player-podcast-thumbnail') as HTMLImageElement;
+			const infoBtnEl = this.playerContentEl.querySelector('.player-info-button') as HTMLElement;
 
 			if (state.currentEpisode) {
 				if (titleEl) titleEl.textContent = state.currentEpisode.title;
 				if (durationEl) durationEl.textContent = this.formatTime(state.currentEpisode.duration);
+				if (infoBtnEl) infoBtnEl.style.display = 'flex';
 
 				// Update thumbnail and podcast title
 				const podcastId = state.currentEpisode.podcastId;
@@ -628,6 +765,7 @@ export class PlayerView extends ItemView {
 				if (podcastEl) podcastEl.textContent = 'Select a podcast to start';
 				if (durationEl) durationEl.textContent = '--:--';
 				if (thumbnailEl) thumbnailEl.style.display = 'none';
+				if (infoBtnEl) infoBtnEl.style.display = 'none';
 			}
 
 			// Update play/pause button
@@ -679,25 +817,50 @@ export class PlayerView extends ItemView {
 				speedLabel.textContent = `${state.playbackSpeed.toFixed(1)}x`;
 			}
 
-			// Check for queue updates
-			const queueManager = this.plugin.getQueueManager();
-			const currentQueue = await queueManager.getCurrentQueue();
+			// Check for queue/playlist updates
+			const isPlayingFromPlaylist = playerController.isPlayingFromPlaylist();
+			const currentPlaylist = playerController.getCurrentPlaylist();
+			const currentPlaylistIndex = playerController.getCurrentPlaylistIndex();
 
-			if (currentQueue) {
-				const updatedAt = currentQueue.updatedAt instanceof Date ? currentQueue.updatedAt.getTime() : new Date(currentQueue.updatedAt).getTime();
+			// Rerender if playlist state changed (switched to/from playlist, or playlist content changed)
+			const playlistStateKey = isPlayingFromPlaylist
+				? `playlist:${currentPlaylist?.id}:${currentPlaylistIndex}`
+				: 'queue';
 
-				// If queue ID changed OR queue was updated
-				if (currentQueue.id !== this.currentQueueId || updatedAt > this.lastQueueUpdatedAt) {
-					this.currentQueueId = currentQueue.id;
-					this.lastQueueUpdatedAt = updatedAt;
+			if (this.lastPlaylistStateKey !== playlistStateKey) {
+				this.lastPlaylistStateKey = playlistStateKey;
+				const playerContainer = this.playerContentEl.querySelector('.player-container') as HTMLElement;
+				if (playerContainer) {
+					const oldQueueSection = playerContainer.querySelector('.queue-section');
+					if (oldQueueSection) {
+						oldQueueSection.remove();
+					}
+					await this.renderQueueSection(playerContainer);
+				}
+				return; // Already re-rendered, skip queue check
+			}
 
-					const playerContainer = this.playerContentEl.querySelector('.player-container') as HTMLElement;
-					if (playerContainer) {
-						const oldQueueSection = playerContainer.querySelector('.queue-section');
-						if (oldQueueSection) {
-							oldQueueSection.remove();
+			// Only check queue updates if not playing from playlist
+			if (!isPlayingFromPlaylist) {
+				const queueManager = this.plugin.getQueueManager();
+				const currentQueue = await queueManager.getCurrentQueue();
+
+				if (currentQueue) {
+					const updatedAt = currentQueue.updatedAt instanceof Date ? currentQueue.updatedAt.getTime() : new Date(currentQueue.updatedAt).getTime();
+
+					// If queue ID changed OR queue was updated
+					if (currentQueue.id !== this.currentQueueId || updatedAt > this.lastQueueUpdatedAt) {
+						this.currentQueueId = currentQueue.id;
+						this.lastQueueUpdatedAt = updatedAt;
+
+						const playerContainer = this.playerContentEl.querySelector('.player-container') as HTMLElement;
+						if (playerContainer) {
+							const oldQueueSection = playerContainer.querySelector('.queue-section');
+							if (oldQueueSection) {
+								oldQueueSection.remove();
+							}
+							await this.renderQueueSection(playerContainer);
 						}
-						await this.renderQueueSection(playerContainer);
 					}
 				}
 			}
@@ -768,7 +931,19 @@ export class PlayerView extends ItemView {
 		const queueSection = container.createDiv({ cls: 'queue-section' });
 
 		try {
-			// Get current queue
+			const playerController = this.plugin.playerController;
+
+			// Check if playing from a playlist
+			if (playerController.isPlayingFromPlaylist()) {
+				const playlist = playerController.getCurrentPlaylist();
+				if (playlist) {
+					// Render playlist section
+					await this.renderPlaylistSection(queueSection, playlist);
+					return;
+				}
+			}
+
+			// Otherwise, render queue section
 			const queue = await this.getCurrentQueue();
 
 			// Section header with queue name
@@ -805,6 +980,103 @@ export class PlayerView extends ItemView {
 			const errorState = queueSection.createDiv({ cls: 'queue-error-state' });
 			errorState.createEl('p', { text: 'Failed to load queue' });
 		}
+	}
+
+	/**
+	 * Render playlist section (when playing from playlist)
+	 */
+	private async renderPlaylistSection(container: HTMLElement, playlist: Playlist): Promise<void> {
+		// Section header
+		const header = container.createDiv({ cls: 'queue-header' });
+		header.createEl('h3', { text: `Current Playlist: ${playlist.name}`, cls: 'queue-title' });
+
+		if (playlist.episodeIds.length === 0) {
+			const emptyState = container.createDiv({ cls: 'queue-empty-state' });
+			emptyState.createEl('p', { text: 'Playlist is empty' });
+			return;
+		}
+
+		// Episode list container
+		const listContainer = container.createDiv({ cls: 'queue-episode-list' });
+
+		const episodeManager = this.plugin.getEpisodeManager();
+		const playerController = this.plugin.playerController;
+		const currentIndex = playerController.getCurrentPlaylistIndex();
+		const playerState = playerController.getState();
+		const isCurrentlyPlaying = playerState.status === 'playing';
+
+		// Info bar
+		const info = listContainer.createDiv({ cls: 'queue-info' });
+		info.createSpan({
+			text: `${playlist.episodeIds.length} episodes`,
+			cls: 'queue-count'
+		});
+		info.createSpan({
+			text: ` • Playing ${currentIndex + 1} of ${playlist.episodeIds.length}`,
+			cls: 'queue-position'
+		});
+
+		// Episodes list
+		const episodesContainer = listContainer.createDiv({ cls: 'queue-episodes' });
+
+		for (let i = 0; i < playlist.episodeIds.length; i++) {
+			const episodeId = playlist.episodeIds[i];
+			const episode = await episodeManager.getEpisodeWithProgress(episodeId);
+
+			if (episode) {
+				const isCurrent = i === currentIndex;
+				this.renderPlaylistEpisodeItem(episodesContainer, episode, i, isCurrent, isCurrentlyPlaying);
+			}
+		}
+	}
+
+	/**
+	 * Render a single playlist episode item
+	 */
+	private renderPlaylistEpisodeItem(
+		container: HTMLElement,
+		episode: EpisodeWithProgress,
+		index: number,
+		isCurrent: boolean,
+		isPlaying: boolean
+	): void {
+		const item = container.createDiv({ cls: `queue-episode-item ${isCurrent ? 'current' : ''}` });
+		item.setAttribute('data-episode-id', episode.id);
+		item.setAttribute('data-index', String(index));
+
+		// Action icon
+		const actionEl = item.createDiv({ cls: 'queue-episode-action' });
+
+		if (isCurrent) {
+			const icon = actionEl.createDiv({ cls: 'icon-current' });
+			setIcon(icon, isPlaying ? 'pause' : 'play');
+		} else {
+			const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+			setIcon(playIcon, 'play');
+		}
+
+		// Episode info
+		const info = item.createDiv({ cls: 'queue-episode-info' });
+		info.createEl('span', { text: episode.title, cls: 'queue-episode-title' });
+
+		if (episode.duration) {
+			info.createEl('span', {
+				text: this.formatTime(episode.duration),
+				cls: 'queue-episode-duration'
+			});
+		}
+
+		// Click to play this episode
+		item.addEventListener('click', async () => {
+			const playerController = this.plugin.playerController;
+			const playlist = playerController.getCurrentPlaylist();
+
+			if (playlist) {
+				// Update the playlist index and load the episode
+				playerController.setCurrentPlaylist(playlist, index);
+				await playerController.loadEpisode(episode, true, true);
+			}
+		});
 	}
 
 	/**

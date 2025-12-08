@@ -4,14 +4,10 @@ node_modules/
 # Build output
 dist/
 
-# Test Vault - 忽略使用者資料，保留結構
-Test Vault/.obsidian/workspace.json
-Test Vault/.obsidian/workspace-mobile.json
-Test Vault/.obsidian/hotkeys.json
-Test Vault/.obsidian/graph.json
-Test Vault/.obsidian/plugins/*/data/
-Test Vault/**/*.md
-!Test Vault/README.md
+# Test Vaults & User Data
+Test Vault/
+Podcast Test Vault/
+*.opml
 
 # IDE
 .vscode/
@@ -20,9 +16,11 @@ Test Vault/**/*.md
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Logs
 *.log
+npm-debug.log*
 
 # Test coverage
 coverage/
@@ -30,3 +28,15 @@ coverage/
 # Temporary files
 *.tmp
 *.swp
+*.bak
+*fix*.css
+DEBUG_*.html
+*_REPORT.md
+
+# AI & Agent Context
+claude/
+gemini/
+*.gemini
+CLAUDE.md
+gemini.md
+agents.md

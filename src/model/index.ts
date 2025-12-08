@@ -184,6 +184,12 @@ export interface PluginSettings {
 	enableNotifications: boolean;
 	/** Default queue ID */
 	defaultQueueId?: string;
+	/** Position to insert podcast notes in daily note */
+	dailyNoteInsertPosition: 'top' | 'bottom' | 'cursor';
+	/** Daily note folder path (empty = root) */
+	dailyNoteFolderPath: string;
+	/** Daily note date format */
+	dailyNoteDateFormat: string;
 }
 
 /**
@@ -201,6 +207,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	maxCacheEpisodes: 50,
 	feedUpdateInterval: 60, // 1 hour
 	enableNotifications: true,
+	dailyNoteInsertPosition: 'bottom',
+	dailyNoteFolderPath: '',
+	dailyNoteDateFormat: 'YYYY-MM-DD',
 };
 
 /**

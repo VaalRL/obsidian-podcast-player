@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "未命名.md",
+                "file": "2025-12-08.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "未命名"
+              "title": "2025-12-08"
             }
           }
         ]
@@ -75,7 +75,7 @@
             }
           },
           {
-            "id": "080ca29a0cedef19",
+            "id": "cf3a0b8e88b0964b",
             "type": "leaf",
             "state": {
               "type": "podcast-sidebar-view",
@@ -175,7 +175,7 @@
             }
           },
           {
-            "id": "404dc198470d5e1d",
+            "id": "c615a9522d737b0c",
             "type": "leaf",
             "state": {
               "type": "podcast-player-view",
@@ -189,7 +189,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 444.5
+    "width": 412.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -203,9 +203,10 @@
       "command-palette:開啟命令面板": false
     }
   },
-  "active": "404dc198470d5e1d",
+  "active": "8ab6f1bcd8d11d0b",
   "lastOpenFiles": [
     "未命名.md",
+    "2025-12-08.md",
     "未命名.base"
   ]
 }

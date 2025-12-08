@@ -1,12 +1,6 @@
 {
   "images": [
     {
-      "imageUrl": "https://files.soundon.fm/1601380848736-bce0f26a-745c-4266-aee1-6d4df3479752.jpeg",
-      "localPath": ".obsidian/plugins/podcast-player/data/cache/images/image-u82n9h.jpeg",
-      "cachedAt": "2025-12-02T09:34:36.407Z",
-      "size": 88449
-    },
-    {
       "imageUrl": "https://files.soundon.fm/1642423606626-936c93f7-4dcb-4c41-a046-951d27a87e66.jpeg",
       "localPath": ".obsidian/plugins/podcast-player/data/cache/images/image-800mzk.jpeg",
       "cachedAt": "2025-12-04T07:03:15.001Z",
@@ -17,6 +11,18 @@
       "localPath": ".obsidian/plugins/podcast-player/data/cache/images/image-dsj9rl.jpeg",
       "cachedAt": "2025-12-04T07:03:20.494Z",
       "size": 206455
+    },
+    {
+      "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/production/podcast_uploaded/5042908/5042908-1587973414327-b05dc3900bb48.jpg",
+      "localPath": ".obsidian/plugins/podcast-player/data/cache/images/image-ol0zp9.jpg",
+      "cachedAt": "2025-12-08T03:05:10.368Z",
+      "size": 329399
+    },
+    {
+      "imageUrl": "https://files.soundon.fm/1601380848736-bce0f26a-745c-4266-aee1-6d4df3479752.jpeg",
+      "localPath": ".obsidian/plugins/podcast-player/data/cache/images/image-u82n9h.jpeg",
+      "cachedAt": "2025-12-08T03:05:11.207Z",
+      "size": 88449
     }
   ],
   "version": 1

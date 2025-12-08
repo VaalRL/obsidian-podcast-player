@@ -7,7 +7,7 @@
 
 import { logger } from '../utils/Logger';
 import { AudioPlaybackError } from '../utils/errorUtils';
-import { Episode, PodcastSettings, PlaybackState } from '../model';
+import { Episode, PodcastSettings, PlaybackState, Playlist } from '../model';
 import { PlaybackEngine, PlaybackStatus, PlaybackEventHandlers } from './PlaybackEngine';
 import { ProgressTracker } from './ProgressTracker';
 import { skipForward, skipBackward, getNextPlaybackSpeed } from '../utils/audioUtils';
@@ -24,6 +24,11 @@ export interface PlayerEventHandlers {
 }
 
 /**
+ * Settings provider function type
+ */
+export type PodcastSettingsProvider = (podcastId: string) => Promise<PodcastSettings | null>;
+
+/**
  * Player Controller
  */
 export class PlayerController {
@@ -33,6 +38,11 @@ export class PlayerController {
 	private currentSettings: PodcastSettings;
 	private eventHandlers: PlayerEventHandlers = {};
 	private state: PlaybackState;
+	private settingsProvider: PodcastSettingsProvider | null = null;
+
+	// Playlist tracking (for prev/next without creating a queue)
+	private currentPlaylist: Playlist | null = null;
+	private currentPlaylistIndex: number = -1;
 
 	constructor(engine: PlaybackEngine, progressTracker: ProgressTracker) {
 		logger.methodEntry('PlayerController', 'constructor');
@@ -156,8 +166,16 @@ export class PlayerController {
 			});
 
 			// Apply podcast-specific settings if available
-			if (episode.podcastId) {
-				// Settings will be applied from outside (via applyPodcastSettings)
+			if (episode.podcastId && this.settingsProvider) {
+				try {
+					const podcastSettings = await this.settingsProvider(episode.podcastId);
+					if (podcastSettings) {
+						this.applyPodcastSettings(podcastSettings);
+						logger.info('Applied podcast-specific settings for', episode.podcastId);
+					}
+				} catch (error) {
+					logger.warn('Failed to get podcast settings', error);
+				}
 			}
 
 			// Start tracking progress
@@ -444,6 +462,13 @@ export class PlayerController {
 	}
 
 	/**
+	 * Set settings provider
+	 */
+	setSettingsProvider(provider: PodcastSettingsProvider): void {
+		this.settingsProvider = provider;
+	}
+
+	/**
 	 * Mark current episode as completed
 	 */
 	async markEpisodeCompleted(): Promise<void> {
@@ -504,9 +529,85 @@ export class PlayerController {
 		this.engine.destroy();
 
 		this.currentEpisode = null;
+		this.currentPlaylist = null;
+		this.currentPlaylistIndex = -1;
 		this.eventHandlers = {};
 
 		logger.info('PlayerController destroyed');
 		logger.methodExit('PlayerController', 'destroy');
+	}
+
+	// ========== Playlist Navigation Methods ==========
+
+	/**
+	 * Set current playlist for navigation
+	 */
+	setCurrentPlaylist(playlist: Playlist | null, episodeIndex: number = 0): void {
+		this.currentPlaylist = playlist;
+		this.currentPlaylistIndex = episodeIndex;
+		logger.info('Current playlist set', playlist?.name, 'index:', episodeIndex);
+	}
+
+	/**
+	 * Get current playlist
+	 */
+	getCurrentPlaylist(): Playlist | null {
+		return this.currentPlaylist;
+	}
+
+	/**
+	 * Get current playlist index
+	 */
+	getCurrentPlaylistIndex(): number {
+		return this.currentPlaylistIndex;
+	}
+
+	/**
+	 * Check if currently playing from a playlist
+	 */
+	isPlayingFromPlaylist(): boolean {
+		return this.currentPlaylist !== null && this.currentPlaylistIndex >= 0;
+	}
+
+	/**
+	 * Check if has next episode in playlist
+	 */
+	hasNextInPlaylist(): boolean {
+		if (!this.currentPlaylist) return false;
+		return this.currentPlaylistIndex < this.currentPlaylist.episodeIds.length - 1;
+	}
+
+	/**
+	 * Check if has previous episode in playlist
+	 */
+	hasPreviousInPlaylist(): boolean {
+		if (!this.currentPlaylist) return false;
+		return this.currentPlaylistIndex > 0;
+	}
+
+	/**
+	 * Get next episode ID in playlist
+	 */
+	getNextPlaylistEpisodeId(): string | null {
+		if (!this.hasNextInPlaylist()) return null;
+		this.currentPlaylistIndex++;
+		return this.currentPlaylist!.episodeIds[this.currentPlaylistIndex];
+	}
+
+	/**
+	 * Get previous episode ID in playlist
+	 */
+	getPreviousPlaylistEpisodeId(): string | null {
+		if (!this.hasPreviousInPlaylist()) return null;
+		this.currentPlaylistIndex--;
+		return this.currentPlaylist!.episodeIds[this.currentPlaylistIndex];
+	}
+
+	/**
+	 * Clear playlist navigation
+	 */
+	clearPlaylist(): void {
+		this.currentPlaylist = null;
+		this.currentPlaylistIndex = -1;
 	}
 }

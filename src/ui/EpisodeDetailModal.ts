@@ -5,7 +5,7 @@
  * - Episode metadata (title, description, duration, publish date)
  * - Podcast information
  * - Playback progress
- * - Action buttons (play, add to queue/playlist, export to note)
+ * - Action buttons (play, add to queue/playlist)
  */
 
 import { App, Modal, Notice, setIcon } from 'obsidian';
@@ -248,12 +248,6 @@ export class EpisodeDetailModal extends Modal {
 		playlistBtn.createSpan({ text: ' Add to Playlist' });
 		playlistBtn.addEventListener('click', () => this.handleAddToPlaylist());
 
-		// Export to Note button
-		const exportBtn = actions.createEl('button');
-		setIcon(exportBtn, 'file-text');
-		exportBtn.createSpan({ text: ' Export to Note' });
-		exportBtn.addEventListener('click', () => this.handleExportToNote());
-
 		// Close button
 		const closeBtn = actions.createEl('button', {
 			text: 'Close'
@@ -302,35 +296,6 @@ export class EpisodeDetailModal extends Modal {
 				new Notice('Episode added to playlist');
 			}
 		).open();
-	}
-
-	/**
-	 * Handle export to note button click
-	 */
-	private async handleExportToNote(): Promise<void> {
-		if (!this.podcast) {
-			new Notice('Failed to find podcast information');
-			return;
-		}
-
-		try {
-			const loadingNotice = new Notice('Exporting episode to note...', 0);
-
-			const noteExporter = this.plugin.getNoteExporter();
-			const noteFile = await noteExporter.exportEpisode(this.episode, this.podcast, this.progress);
-
-			loadingNotice.hide();
-			new Notice(`Note created: ${noteFile.name}`);
-
-			// Open the note
-			const leaf = this.app.workspace.getLeaf(false);
-			await leaf.openFile(noteFile);
-
-			this.close();
-		} catch (error) {
-			console.error('Failed to export to note:', error);
-			new Notice('Failed to export to note');
-		}
 	}
 
 	/**

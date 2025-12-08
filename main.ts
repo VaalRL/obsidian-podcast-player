@@ -126,6 +126,21 @@ export default class PodcastPlayerPlugin extends Plugin {
 		this.progressTracker = new ProgressTracker(this.progressStore);
 		this.playerController = new PlayerController(this.playbackEngine, this.progressTracker);
 
+		// Set up settings provider for podcast-specific playback settings
+		this.playerController.setSettingsProvider(async (podcastId: string) => {
+			try {
+				const podcast = await this.subscriptionStore.getPodcast(podcastId);
+				if (podcast?.settings) {
+					return podcast.settings;
+				}
+				// Return default settings if no podcast-specific settings
+				return this.settings.defaultPlaybackSettings;
+			} catch (error) {
+				logger.warn('Failed to get podcast settings', error);
+				return this.settings.defaultPlaybackSettings;
+			}
+		});
+
 		// Set up player event handlers
 		let lastStatus = 'stopped';
 		let lastEpisodeId: string | null = null;
