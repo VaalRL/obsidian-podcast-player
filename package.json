@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-podcast-player",
 	"version": "0.1.0",
-	"description": "A feature-rich podcast player and manager. Subscribe, play, and integrate with notes.",
+	"description": "A feature-rich podcast player and manager for Obsidian. Subscribe to podcasts, play episodes, manage playlists and queues, and seamlessly integrate with your notes.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
