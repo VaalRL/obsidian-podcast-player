@@ -346,7 +346,7 @@ Contributions are welcome! Please:
 
 ## Credits
 
-Inspired by [Podnote](https://github.com/chhoumann/podnote) by Christian B. B. Houmann.
+Inspired by [Podnote](https://github.com/chhoumann/PodNotes) by Christian B. B. Houmann.
 
 ## License
 
