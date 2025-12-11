@@ -18,6 +18,7 @@ import { SubscribePodcastModal } from './SubscribePodcastModal';
 import { PodcastSettingsModal } from './PodcastSettingsModal';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { TextInputModal } from './TextInputModal';
+import { logger } from '../utils/Logger';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 
@@ -837,7 +838,7 @@ export class PodcastSidebarView extends ItemView {
 			// Refresh the view to show updated data
 			await this.render();
 		} catch (error) {
-			console.error('Failed to refresh feeds:', error);
+			logger.error('Failed to refresh feeds', error);
 			new Notice('Failed to refresh feeds');
 		}
 	}
@@ -865,7 +866,7 @@ export class PodcastSidebarView extends ItemView {
 					// Refresh the view
 					await this.render();
 				} catch (error) {
-					console.error('Failed to save podcast settings:', error);
+					logger.error('Failed to save podcast settings', error);
 					new Notice('Failed to save settings');
 				}
 			}
@@ -894,7 +895,7 @@ export class PodcastSidebarView extends ItemView {
 							await queueManager.addEpisode(queue.id, episode.id);
 							new Notice(`Added to queue: ${queue.name}`);
 						} catch (e) {
-							console.error(e);
+							logger.error('Operation failed', e);
 							new Notice('Failed to add to queue');
 						}
 					})
@@ -933,7 +934,7 @@ export class PodcastSidebarView extends ItemView {
 							await playlistManager.addEpisode(playlist.id, episode.id);
 							new Notice(`Added to playlist: ${playlist.name}`);
 						} catch (e) {
-							console.error(e);
+							logger.error('Operation failed', e);
 							new Notice('Failed to add to playlist');
 						}
 					})
@@ -1061,7 +1062,7 @@ export class PodcastSidebarView extends ItemView {
 
 			new Notice(`Now playing: ${episode.title}`);
 		} catch (error) {
-			console.error('Failed to play episode:', error);
+			logger.error('Failed to play episode', error);
 			new Notice('Failed to start playback');
 		}
 	}
@@ -1101,7 +1102,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice('Feed refreshed');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to refresh feed:', error);
+						logger.error('Failed to refresh feed', error);
 						new Notice('Failed to refresh feed');
 					}
 				})
@@ -1120,7 +1121,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice(`Unsubscribed from ${podcast.title}`);
 						await this.render();
 					} catch (error) {
-						console.error('Failed to unsubscribe:', error);
+						logger.error('Failed to unsubscribe', error);
 						new Notice('Failed to unsubscribe');
 					}
 				})
@@ -1237,7 +1238,7 @@ export class PodcastSidebarView extends ItemView {
 			await leaf.openFile(noteFile);
 
 		} catch (error) {
-			console.error('Failed to export to note:', error);
+			logger.error('Failed to export to note', error);
 			new Notice('Failed to export to note');
 		}
 	}
@@ -1264,7 +1265,7 @@ export class PodcastSidebarView extends ItemView {
 			const subscriptionStore = this.plugin.getSubscriptionStore();
 			return await subscriptionStore.getAllPodcasts();
 		} catch (error) {
-			console.error('Failed to load podcasts:', error);
+			logger.error('Failed to load podcasts', error);
 			return [];
 		}
 	}
@@ -1546,7 +1547,7 @@ export class PodcastSidebarView extends ItemView {
 				await this.plugin.playerController.loadEpisode(episode, true, true);
 			}
 		} catch (error) {
-			console.error('Failed to play queue:', error);
+			logger.error('Failed to play queue', error);
 			new Notice('Failed to play queue');
 		}
 	}
@@ -1597,7 +1598,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice('Queue renamed');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to rename queue:', error);
+						logger.error('Failed to rename queue', error);
 						new Notice('Failed to rename queue');
 					}
 				})
@@ -1616,7 +1617,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice('Queue cleared');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to clear queue:', error);
+						logger.error('Failed to clear queue', error);
 						new Notice('Failed to clear queue');
 					}
 				})
@@ -1635,7 +1636,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice('Queue deleted');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to delete queue:', error);
+						logger.error('Failed to delete queue', error);
 						new Notice('Failed to delete queue');
 					}
 				})
@@ -1732,7 +1733,7 @@ export class PodcastSidebarView extends ItemView {
 				}
 			});
 		} catch (error) {
-			console.error('Failed to update list icons:', error);
+			logger.error('Failed to update list icons', error);
 		}
 	}
 
@@ -1779,7 +1780,7 @@ export class PodcastSidebarView extends ItemView {
 					this.renderPlaylistEpisodeItem(listContainer, episodeWithProgress, i);
 				}
 			} catch (error) {
-				console.error(`Failed to load episode: ${episodeId}`, error);
+				logger.error(`Failed to load episode: ${episodeId}`, error);
 			}
 		}
 	}
@@ -1878,7 +1879,7 @@ export class PodcastSidebarView extends ItemView {
 					this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
 				}
 			} catch (error) {
-				console.error('Failed to play/pause episode:', error);
+				logger.error('Failed to play/pause episode', error);
 			}
 		});
 
@@ -1991,7 +1992,7 @@ export class PodcastSidebarView extends ItemView {
 					}
 				}
 			} catch (error) {
-				console.error('Failed to play/pause episode:', error);
+				logger.error('Failed to play/pause episode', error);
 			}
 		});
 
@@ -2081,7 +2082,7 @@ export class PodcastSidebarView extends ItemView {
 
 			await this.render();
 		} catch (error) {
-			console.error('Failed to reorder:', error);
+			logger.error('Failed to reorder', error);
 			new Notice('Failed to reorder items');
 		} finally {
 			// Cleanup
@@ -2114,7 +2115,7 @@ export class PodcastSidebarView extends ItemView {
 			// Refresh the view
 			await this.render();
 		} catch (error) {
-			console.error('Failed to create playlist:', error);
+			logger.error('Failed to create playlist', error);
 			new Notice('Failed to create playlist');
 		}
 	}
@@ -2136,7 +2137,7 @@ export class PodcastSidebarView extends ItemView {
 			// Refresh the view
 			await this.render();
 		} catch (error) {
-			console.error('Failed to create queue:', error);
+			logger.error('Failed to create queue', error);
 			new Notice('Failed to create queue');
 		}
 	}
@@ -2165,7 +2166,7 @@ export class PodcastSidebarView extends ItemView {
 					this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
 					await this.render();
 				} catch (error) {
-					console.error('Failed to rename playlist:', error);
+					logger.error('Failed to rename playlist', error);
 					new Notice('Failed to rename playlist');
 				}
 			},
@@ -2181,7 +2182,7 @@ export class PodcastSidebarView extends ItemView {
 					this.selectedPlaylist = null;
 					await this.render();
 				} catch (error) {
-					console.error('Failed to delete playlist:', error);
+					logger.error('Failed to delete playlist', error);
 					new Notice('Failed to delete playlist');
 				}
 			}
@@ -2268,7 +2269,7 @@ export class PodcastSidebarView extends ItemView {
 					new Notice('Queue renamed');
 					await this.render();
 				} catch (error) {
-					console.error('Failed to rename queue:', error);
+					logger.error('Failed to rename queue', error);
 					new Notice('Failed to rename queue');
 				}
 			},
@@ -2284,7 +2285,7 @@ export class PodcastSidebarView extends ItemView {
 					this.selectedQueue = null;
 					await this.render();
 				} catch (error) {
-					console.error('Failed to delete queue:', error);
+					logger.error('Failed to delete queue', error);
 					new Notice('Failed to delete queue');
 				}
 			}
@@ -2321,7 +2322,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice('Playlist renamed');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to rename playlist:', error);
+						logger.error('Failed to rename playlist', error);
 						new Notice('Failed to rename playlist');
 					}
 				})
@@ -2340,7 +2341,7 @@ export class PodcastSidebarView extends ItemView {
 						new Notice('Playlist deleted');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to delete playlist:', error);
+						logger.error('Failed to delete playlist', error);
 						new Notice('Failed to delete playlist');
 					}
 				})
@@ -2387,7 +2388,7 @@ export class PodcastSidebarView extends ItemView {
 							await this.render();
 						}
 					} catch (error) {
-						console.error('Failed to remove episode:', error);
+						logger.error('Failed to remove episode', error);
 						new Notice('Failed to remove episode');
 					}
 				})

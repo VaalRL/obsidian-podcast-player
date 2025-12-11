@@ -8,6 +8,7 @@ import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { PluginSettings } from '../model';
 import { showConfirmModal } from './ConfirmModal';
+import { logger } from '../utils/Logger';
 
 /**
  * PodcastPlayerSettingTab - Settings UI for the Podcast Player plugin
@@ -434,7 +435,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			URL.revokeObjectURL(url);
 			new Notice('Settings exported successfully');
 		} catch (error) {
-			console.error('Failed to export settings:', error);
+			logger.error('Failed to export settings', error);
 			new Notice('Failed to export settings');
 		}
 	}
@@ -471,7 +472,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 				new Notice('Settings imported successfully');
 			} catch (error) {
-				console.error('Failed to import settings:', error);
+				logger.error('Failed to import settings', error);
 				new Notice('Failed to import settings: Invalid file format');
 			}
 		};
@@ -498,7 +499,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			URL.revokeObjectURL(url);
 			new Notice('OPML exported successfully');
 		} catch (error) {
-			console.error('Failed to export OPML:', error);
+			logger.error('Failed to export OPML', error);
 			new Notice('Failed to export OPML');
 		}
 	}
@@ -551,7 +552,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 				new Notice(`Imported ${successCount} podcasts (${failCount} failed)`);
 			} catch (error) {
-				console.error('Failed to import OPML:', error);
+				logger.error('Failed to import OPML', error);
 				new Notice('Failed to import OPML: Invalid file format');
 			}
 		};
@@ -578,7 +579,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			URL.revokeObjectURL(url);
 			new Notice('Full backup exported successfully');
 		} catch (error) {
-			console.error('Failed to export backup:', error);
+			logger.error('Failed to export backup', error);
 			new Notice('Failed to export backup');
 		}
 	}
@@ -631,7 +632,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				this.display(); // Refresh the display
 
 			} catch (error) {
-				console.error('Failed to import backup:', error);
+				logger.error('Failed to import backup', error);
 				new Notice('Failed to import backup: Invalid file format');
 			}
 		};
@@ -685,7 +686,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			// Refresh the display
 			this.display();
 		} catch (error) {
-			console.error('Failed to delete all data:', error);
+			logger.error('Failed to delete all data', error);
 			new Notice('Failed to delete all data');
 		}
 	}

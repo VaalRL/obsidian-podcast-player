@@ -11,6 +11,7 @@ import { Queue, Playlist } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { AddNoteModal } from './AddNoteModal';
+import { logger } from '../utils/Logger';
 
 export const PLAYER_VIEW_TYPE = 'podcast-player-view';
 
@@ -442,11 +443,11 @@ export class PlayerView extends ItemView {
 
 		try {
 			if (!this.plugin) {
-				console.error('PlayerView: Plugin instance is missing');
+				logger.error('PlayerView: Plugin instance is missing');
 				return;
 			}
 			if (!this.plugin.playerController) {
-				console.error('PlayerView: PlayerController is missing');
+				logger.error('PlayerView: PlayerController is missing');
 				return;
 			}
 
@@ -465,7 +466,7 @@ export class PlayerView extends ItemView {
 				playerController.play();
 			}
 		} catch (error) {
-			console.error('Failed to toggle playback:', error);
+			logger.error('Failed to toggle playback', error);
 		}
 	}
 
@@ -500,7 +501,7 @@ export class PlayerView extends ItemView {
 
 
 		} catch (error) {
-			console.error('Failed to play from first queue:', error);
+			logger.error('Failed to play from first queue', error);
 		}
 	}
 
@@ -534,7 +535,7 @@ export class PlayerView extends ItemView {
 				await this.loadEpisodeById(previousEpisodeId);
 			}
 		} catch (error) {
-			console.error('Failed to go to previous episode:', error);
+			logger.error('Failed to go to previous episode', error);
 		}
 	}
 
@@ -568,7 +569,7 @@ export class PlayerView extends ItemView {
 				await this.loadEpisodeById(nextEpisodeId);
 			}
 		} catch (error) {
-			console.error('Failed to go to next episode:', error);
+			logger.error('Failed to go to next episode', error);
 		}
 	}
 
@@ -592,7 +593,7 @@ export class PlayerView extends ItemView {
 		try {
 			podcast = await this.plugin.getSubscriptionStore().getPodcast(currentEpisode.podcastId);
 		} catch (error) {
-			console.error('Failed to get podcast info:', error);
+			logger.error('Failed to get podcast info', error);
 		}
 
 		// Open the add note modal
@@ -622,7 +623,7 @@ export class PlayerView extends ItemView {
 				await playerController.loadEpisode(episodeWithProgress, true, true);
 			}
 		} catch (error) {
-			console.error('Failed to load episode:', error);
+			logger.error('Failed to load episode', error);
 		}
 	}
 
@@ -634,7 +635,7 @@ export class PlayerView extends ItemView {
 			const playerController = this.plugin.playerController;
 			playerController.skipBackward(15);
 		} catch (error) {
-			console.error('Failed to skip backward:', error);
+			logger.error('Failed to skip backward', error);
 		}
 	}
 
@@ -646,7 +647,7 @@ export class PlayerView extends ItemView {
 			const playerController = this.plugin.playerController;
 			playerController.skipForward(30);
 		} catch (error) {
-			console.error('Failed to skip forward:', error);
+			logger.error('Failed to skip forward', error);
 		}
 	}
 
@@ -673,7 +674,7 @@ export class PlayerView extends ItemView {
 
 			playerController.seek(targetPosition);
 		} catch (error) {
-			console.error('Failed to seek:', error);
+			logger.error('Failed to seek', error);
 		}
 	}
 
@@ -686,7 +687,7 @@ export class PlayerView extends ItemView {
 			// Convert percentage (0-100) to decimal (0-1)
 			playerController.setVolume(volume / 100);
 		} catch (error) {
-			console.error('Failed to change volume:', error);
+			logger.error('Failed to change volume', error);
 		}
 	}
 
@@ -698,7 +699,7 @@ export class PlayerView extends ItemView {
 			const playerController = this.plugin.playerController;
 			playerController.setPlaybackSpeed(speed);
 		} catch (error) {
-			console.error('Failed to change playback speed:', error);
+			logger.error('Failed to change playback speed', error);
 		}
 	}
 
@@ -882,7 +883,7 @@ export class PlayerView extends ItemView {
 				}
 			}
 		} catch (error) {
-			console.error('Failed to update player state:', error);
+			logger.error('Failed to update player state', error);
 		}
 	}
 
@@ -926,7 +927,7 @@ export class PlayerView extends ItemView {
 				}
 			});
 		} catch (error) {
-			console.error('Failed to update play state:', error);
+			logger.error('Failed to update play state', error);
 		}
 	}
 
@@ -993,7 +994,7 @@ export class PlayerView extends ItemView {
 			await this.renderQueueEpisodeList(queueSection, queue);
 
 		} catch (error) {
-			console.error('Failed to render queue section:', error);
+			logger.error('Failed to render queue section', error);
 			const errorState = queueSection.createDiv({ cls: 'queue-error-state' });
 			errorState.createEl('p', { text: 'Failed to load queue' });
 		}
@@ -1130,7 +1131,7 @@ export class PlayerView extends ItemView {
 
 			return null;
 		} catch (error) {
-			console.error('Failed to get current queue:', error);
+			logger.error('Failed to get current queue', error);
 			return null;
 		}
 	}
@@ -1179,7 +1180,7 @@ export class PlayerView extends ItemView {
 					this.renderQueueEpisodeItem(episodesContainer, episode, i, isCurrent, isCurrent && isCurrentlyPlaying);
 				}
 			} catch (error) {
-				console.error(`Failed to load episode: ${episodeId}`, error);
+				logger.error(`Failed to load episode: ${episodeId}`, error);
 			}
 		}
 
@@ -1251,7 +1252,7 @@ export class PlayerView extends ItemView {
 					// Force refresh immediately to show new order
 					await this.renderPlayer();
 				} catch (error) {
-					console.error('Failed to move episode:', error);
+					logger.error('Failed to move episode', error);
 				}
 			}
 		});
@@ -1323,7 +1324,7 @@ export class PlayerView extends ItemView {
 						}
 					}
 				} catch (error) {
-					console.error('Failed to play/pause episode from queue:', error);
+					logger.error('Failed to play/pause episode from queue', error);
 				}
 			})();
 		});

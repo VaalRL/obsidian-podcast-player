@@ -10,6 +10,7 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Playlist, Episode } from '../model';
+import { logger } from '../utils/Logger';
 
 /**
  * Modal for adding episodes to a playlist
@@ -144,7 +145,7 @@ export class AddToPlaylistModal extends Modal {
 
 						new Notice(`Added to playlist successfully`);
 					} catch (error) {
-						console.error('Failed to add to playlist:', error);
+						logger.error('Failed to add to playlist', error);
 						new Notice('Failed to add to playlist');
 					}
 				})();

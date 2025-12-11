@@ -10,6 +10,7 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Queue, Episode } from '../model';
+import { logger } from '../utils/Logger';
 
 /**
  * Modal for adding episodes to a queue
@@ -129,7 +130,7 @@ export class AddToQueueModal extends Modal {
 
 						new Notice(`Added to queue successfully`);
 					} catch (error) {
-						console.error('Failed to add to queue:', error);
+						logger.error('Failed to add to queue', error);
 						new Notice('Failed to add to queue');
 					}
 				})();

@@ -10,6 +10,7 @@ import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Playlist, Queue, Episode } from '../model';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
+import { logger } from '../utils/Logger';
 
 export const PLAYLIST_QUEUE_VIEW_TYPE = 'playlist-queue-view';
 
@@ -482,7 +483,7 @@ export class PlaylistQueueView extends ItemView {
 					this.renderEpisodeItem(listContainer, episodeWithProgress, i, type, i === currentIndex);
 				}
 			} catch (error) {
-				console.error(`Failed to load episode: ${episodeId}`, error);
+				logger.error(`Failed to load episode: ${episodeId}`, error);
 			}
 		}
 	}
@@ -554,7 +555,7 @@ export class PlaylistQueueView extends ItemView {
 			await playerController.loadEpisode(episode, true, true);
 			new Notice(`Now playing: ${episode.title}`);
 		} catch (error) {
-			console.error('Failed to play episode:', error);
+			logger.error('Failed to play episode', error);
 			new Notice('Failed to start playback');
 		}
 	}
@@ -598,7 +599,7 @@ export class PlaylistQueueView extends ItemView {
 						new Notice('Playlist deleted');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to delete playlist:', error);
+						logger.error('Failed to delete playlist', error);
 						new Notice('Failed to delete playlist');
 					}
 				})
@@ -646,7 +647,7 @@ export class PlaylistQueueView extends ItemView {
 						new Notice('Queue cleared');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to clear queue:', error);
+						logger.error('Failed to clear queue', error);
 						new Notice('Failed to clear queue');
 					}
 				})
@@ -663,7 +664,7 @@ export class PlaylistQueueView extends ItemView {
 						new Notice('Queue deleted');
 						await this.render();
 					} catch (error) {
-						console.error('Failed to delete queue:', error);
+						logger.error('Failed to delete queue', error);
 						new Notice('Failed to delete queue');
 					}
 				})
@@ -717,7 +718,7 @@ export class PlaylistQueueView extends ItemView {
 						}
 						await this.render();
 					} catch (error) {
-						console.error('Failed to remove episode:', error);
+						logger.error('Failed to remove episode', error);
 						new Notice('Failed to remove episode');
 					}
 				})

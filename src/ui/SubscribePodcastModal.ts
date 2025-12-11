@@ -11,6 +11,7 @@
 import { App, Modal, Setting, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { PodcastSearchResult } from '../model';
+import { logger } from '../utils/Logger';
 
 /**
  * Modal for subscribing to a new podcast via search or RSS/Atom feed URL
@@ -336,7 +337,7 @@ export class SubscribePodcastModal extends Modal {
 			this.renderContent();
 
 		} catch (error) {
-			console.error('Failed to parse OPML file:', error);
+			logger.error('Failed to parse OPML file', error);
 			new Notice('Failed to read the OPML file');
 		}
 	}
@@ -448,7 +449,7 @@ export class SubscribePodcastModal extends Modal {
 			this.renderSearchResults();
 
 		} catch (error) {
-			console.error('Search failed:', error);
+			logger.error('Search failed', error);
 			this.searchResultsContainer.empty();
 
 			const errorDiv = this.searchResultsContainer.createDiv({
@@ -649,7 +650,7 @@ export class SubscribePodcastModal extends Modal {
 					successCount++;
 				} else {
 					failCount++;
-					console.error(`Failed to subscribe to ${url}:`, result.error);
+					logger.error(`Failed to subscribe to ${url}`, result.error);
 				}
 			}
 
@@ -668,7 +669,7 @@ export class SubscribePodcastModal extends Modal {
 			}
 
 		} catch (error) {
-			console.error('Batch subscription failed:', error);
+			logger.error('Batch subscription failed', error);
 			new Notice('Failed to subscribe to podcasts');
 		}
 	}
@@ -716,7 +717,7 @@ export class SubscribePodcastModal extends Modal {
 			}
 
 		} catch (error) {
-			console.error('Failed to subscribe to podcast:', error);
+			logger.error('Failed to subscribe to podcast', error);
 
 			// Determine the error message
 			let errorMessage = 'Failed to subscribe to podcast';

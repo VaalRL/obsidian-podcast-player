@@ -13,6 +13,7 @@ import type PodcastPlayerPlugin from '../../main';
 import { Episode, Podcast, PlayProgress } from '../model';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
+import { logger } from '../utils/Logger';
 
 /**
  * Modal for viewing episode details
@@ -58,7 +59,7 @@ export class EpisodeDetailModal extends Modal {
 			const episodeWithProgress = await episodeManager.getEpisodeWithProgress(this.episode.id);
 			this.progress = episodeWithProgress?.progress;
 		} catch (error) {
-			console.error('Failed to load episode data:', error);
+			logger.error('Failed to load episode data', error);
 		}
 	}
 
@@ -267,7 +268,7 @@ export class EpisodeDetailModal extends Modal {
 			new Notice(`Now playing: ${this.episode.title}`);
 			this.close();
 		} catch (error) {
-			console.error('Failed to play episode:', error);
+			logger.error('Failed to play episode', error);
 			new Notice('Failed to start playback');
 		}
 	}

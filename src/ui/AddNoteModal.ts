@@ -7,6 +7,7 @@
 import { App, Modal, Notice, TextAreaComponent, TFile } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Episode, Podcast } from '../model';
+import { logger } from '../utils/Logger';
 
 declare global {
     interface Window {
@@ -122,7 +123,7 @@ export class AddNoteModal extends Modal {
             new Notice('Note added to daily note');
             this.close();
         } catch (error) {
-            console.error('Failed to add note:', error);
+            logger.error('Failed to add note', error);
             new Notice('Failed to add note');
         }
     }

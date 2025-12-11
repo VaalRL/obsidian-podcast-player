@@ -11,6 +11,7 @@
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Podcast, PodcastSettings, AutoAddRule } from '../model';
+import { logger } from '../utils/Logger';
 
 /**
  * Modal for configuring individual podcast settings
@@ -292,7 +293,7 @@ export class PodcastSettingsModal extends Modal {
 			new Notice('Podcast settings saved');
 
 		} catch (error) {
-			console.error('Failed to save podcast settings:', error);
+			logger.error('Failed to save podcast settings', error);
 			new Notice('Failed to save settings');
 		}
 	}
