@@ -98,11 +98,11 @@ export class BackupService {
 		logger.info('Starting backup service');
 
 		// Run initial check
-		this.checkAndRunDailyBackup();
+		void this.checkAndRunDailyBackup();
 
 		// Set up interval for checking (every hour)
 		this.autoBackupInterval = setInterval(() => {
-			this.checkAndRunDailyBackup();
+			void this.checkAndRunDailyBackup();
 		}, 60 * 60 * 1000); // Check every hour
 	}
 

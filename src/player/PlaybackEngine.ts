@@ -125,12 +125,13 @@ export class PlaybackEngine {
 			this.eventHandlers.onCanPlay?.();
 		});
 
-		this.audio.addEventListener('error', (event) => {
-			logger.error('Audio playback error', this.audio?.error);
+		this.audio.addEventListener('error', () => {
+			const mediaError = this.audio?.error;
+			logger.error('Audio playback error', mediaError ? new Error(mediaError.message) : undefined);
 			this.status = 'error';
 
 			const error = new AudioPlaybackError(
-				this.audio?.error?.message || 'Unknown playback error',
+				mediaError?.message || 'Unknown playback error',
 				this.currentUrl || undefined
 			);
 
@@ -167,7 +168,7 @@ export class PlaybackEngine {
 	/**
 	 * Load audio from URL
 	 */
-	async load(url: string): Promise<void> {
+	load(url: string): void {
 		logger.methodEntry('PlaybackEngine', 'load', url);
 
 		if (!this.audio) {
@@ -188,9 +189,9 @@ export class PlaybackEngine {
 			logger.info('Audio loaded', url);
 			logger.methodExit('PlaybackEngine', 'load');
 		} catch (error) {
-			logger.error('Failed to load audio', error);
+			logger.error('Failed to load audio', error instanceof Error ? error : undefined);
 			this.status = 'error';
-			throw new AudioPlaybackError('Failed to load audio', url, error);
+			throw new AudioPlaybackError('Failed to load audio', url, error instanceof Error ? error : undefined);
 		}
 	}
 

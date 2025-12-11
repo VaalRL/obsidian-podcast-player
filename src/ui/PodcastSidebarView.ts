@@ -198,7 +198,7 @@ export class PodcastSidebarView extends ItemView {
 		const performSearch = () => {
 
 			this.searchQuery = searchInput.value;
-			this.render();
+			void this.render();
 		};
 
 		// Handle search button click
@@ -226,7 +226,7 @@ export class PodcastSidebarView extends ItemView {
 			clearBtn.addEventListener('click', () => {
 
 				this.searchQuery = '';
-				this.render();
+				void this.render();
 			});
 		}
 
@@ -260,22 +260,22 @@ export class PodcastSidebarView extends ItemView {
 
 			if (this.selectedPodcast || this.selectedPlaylist) {
 				// Episode sort options
-				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.episodeSortBy = 'title'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Date').setChecked(currentSortBy === 'date').onClick(() => { this.episodeSortBy = 'date'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Duration').setChecked(currentSortBy === 'duration').onClick(() => { this.episodeSortBy = 'duration'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.episodeSortBy = 'title'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Date').setChecked(currentSortBy === 'date').onClick(() => { this.episodeSortBy = 'date'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Duration').setChecked(currentSortBy === 'duration').onClick(() => { this.episodeSortBy = 'duration'; void this.render(); }));
 			} else if (this.viewMode === 'playlists') {
 				// Playlist sort options
-				menu.addItem((item) => item.setTitle('Name').setChecked(currentSortBy === 'name').onClick(() => { this.playlistSortBy = 'name'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Date').setChecked(currentSortBy === 'date').onClick(() => { this.playlistSortBy = 'date'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Episode Count').setChecked(currentSortBy === 'count').onClick(() => { this.playlistSortBy = 'count'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Name').setChecked(currentSortBy === 'name').onClick(() => { this.playlistSortBy = 'name'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Date').setChecked(currentSortBy === 'date').onClick(() => { this.playlistSortBy = 'date'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Episode Count').setChecked(currentSortBy === 'count').onClick(() => { this.playlistSortBy = 'count'; void this.render(); }));
 			} else {
 				// Podcast sort options
-				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.podcastSortBy = 'title'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Author').setChecked(currentSortBy === 'author').onClick(() => { this.podcastSortBy = 'author'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Subscribed Date').setChecked(currentSortBy === 'date').onClick(() => { this.podcastSortBy = 'date'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Latest Episode').setChecked(currentSortBy === 'latest').onClick(() => { this.podcastSortBy = 'latest'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Total Episodes').setChecked(currentSortBy === 'count').onClick(() => { this.podcastSortBy = 'count'; this.render(); }));
-				menu.addItem((item) => item.setTitle('Unplayed Count').setChecked(currentSortBy === 'unplayed').onClick(() => { this.podcastSortBy = 'unplayed'; this.render(); }));
+				menu.addItem((item) => item.setTitle('Title').setChecked(currentSortBy === 'title').onClick(() => { this.podcastSortBy = 'title'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Author').setChecked(currentSortBy === 'author').onClick(() => { this.podcastSortBy = 'author'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Subscribed Date').setChecked(currentSortBy === 'date').onClick(() => { this.podcastSortBy = 'date'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Latest Episode').setChecked(currentSortBy === 'latest').onClick(() => { this.podcastSortBy = 'latest'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Total Episodes').setChecked(currentSortBy === 'count').onClick(() => { this.podcastSortBy = 'count'; void this.render(); }));
+				menu.addItem((item) => item.setTitle('Unplayed Count').setChecked(currentSortBy === 'unplayed').onClick(() => { this.podcastSortBy = 'unplayed'; void this.render(); }));
 			}
 
 			menu.addSeparator();
@@ -305,7 +305,7 @@ export class PodcastSidebarView extends ItemView {
 		} else {
 			this.podcastSortDirection = dir;
 		}
-		this.render();
+		void this.render();
 	}
 
 
@@ -333,7 +333,7 @@ export class PodcastSidebarView extends ItemView {
 				this.selectedPodcast = null;
 				this.selectedPlaylist = null;
 				this.selectedQueue = null;
-				this.render();
+				void this.render();
 			});
 		}
 
@@ -366,7 +366,7 @@ export class PodcastSidebarView extends ItemView {
 				setIcon(toggleViewBtn, this.feedsViewMode === 'feeds' ? 'list' : 'rss');
 				toggleViewBtn.addEventListener('click', () => {
 					this.feedsViewMode = this.feedsViewMode === 'feeds' ? 'episodes' : 'feeds';
-					this.render();
+					void this.render();
 				});
 
 				// Add podcast button
@@ -451,7 +451,7 @@ export class PodcastSidebarView extends ItemView {
 			this.selectedQueue = null;
 
 			this.viewMode = 'podcasts';
-			this.render();
+			void this.render();
 		});
 
 		const playlistsBtn = modeToggle.createEl('button', {
@@ -465,7 +465,7 @@ export class PodcastSidebarView extends ItemView {
 			this.selectedQueue = null;
 
 			this.viewMode = 'playlists';
-			this.render();
+			void this.render();
 		});
 	}
 
@@ -686,7 +686,7 @@ export class PodcastSidebarView extends ItemView {
 			// Reset sort to Newest First (Date Descending)
 			this.episodeSortBy = 'date';
 			this.episodeSortDirection = 'desc';
-			this.render();
+			void this.render();
 		});
 
 		// Context menu
@@ -1085,7 +1085,7 @@ export class PodcastSidebarView extends ItemView {
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedPodcast = podcast;
-					this.render();
+					void this.render();
 				})
 		);
 
@@ -1806,9 +1806,9 @@ export class PodcastSidebarView extends ItemView {
 				this.handleDragStart(e, index, 'playlist', this.selectedPlaylist.id);
 			}
 		});
-		item.addEventListener('dragover', this.handleDragOver);
-		item.addEventListener('dragenter', this.handleDragEnter);
-		item.addEventListener('dragleave', this.handleDragLeave);
+		item.addEventListener('dragover', (e) => this.handleDragOver(e));
+		item.addEventListener('dragenter', (e) => this.handleDragEnter(e));
+		item.addEventListener('dragleave', (e) => this.handleDragLeave(e));
 		item.addEventListener('drop', (e) => {
 			if (this.selectedPlaylist) {
 				this.handleDrop(e, index, 'playlist', this.selectedPlaylist.id);
@@ -1911,9 +1911,9 @@ export class PodcastSidebarView extends ItemView {
 				this.handleDragStart(e, index, 'queue', this.selectedQueue.id);
 			}
 		});
-		item.addEventListener('dragover', this.handleDragOver);
-		item.addEventListener('dragenter', this.handleDragEnter);
-		item.addEventListener('dragleave', this.handleDragLeave);
+		item.addEventListener('dragover', (e) => this.handleDragOver(e));
+		item.addEventListener('dragenter', (e) => this.handleDragEnter(e));
+		item.addEventListener('dragleave', (e) => this.handleDragLeave(e));
 		item.addEventListener('drop', (e) => {
 			if (this.selectedQueue) {
 				this.handleDrop(e, index, 'queue', this.selectedQueue.id);

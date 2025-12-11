@@ -7,7 +7,7 @@
 
 import { requestUrl } from 'obsidian';
 import { logger } from '../utils/Logger';
-import { FeedParseError, NetworkError, StorageError, handleError } from '../utils/errorUtils';
+import { FeedParseError, NetworkError } from '../utils/errorUtils';
 import { Podcast, Episode, PodcastSettings, PodcastSearchResult } from '../model';
 import { FeedService } from '../feed/FeedService';
 import { SubscriptionStore, SubscriptionData } from '../storage/SubscriptionStore';

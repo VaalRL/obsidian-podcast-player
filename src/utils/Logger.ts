@@ -75,7 +75,7 @@ export class Logger {
 	/**
 	 * Log an error message
 	 */
-	error(message: string, error?: Error | unknown, ...args: unknown[]): void {
+	error(message: string, error?: unknown, ...args: unknown[]): void {
 		if (this.logLevel <= LogLevel.ERROR) {
 			if (error instanceof Error) {
 				console.error(`${this.prefix} [ERROR]`, message, error.message, error.stack, ...args);

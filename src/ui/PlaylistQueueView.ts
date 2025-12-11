@@ -120,7 +120,7 @@ export class PlaylistQueueView extends ItemView {
 		// Handle search input
 		searchInput.addEventListener('input', (e) => {
 			this.searchQuery = (e.target as HTMLInputElement).value;
-			this.render();
+			void this.render();
 		});
 
 		// Clear button (if there's a search query)
@@ -132,7 +132,7 @@ export class PlaylistQueueView extends ItemView {
 			setIcon(clearBtn, 'x');
 			clearBtn.addEventListener('click', () => {
 				this.searchQuery = '';
-				this.render();
+				void this.render();
 			});
 		}
 	}
@@ -156,7 +156,7 @@ export class PlaylistQueueView extends ItemView {
 
 		sortBySelect.addEventListener('change', (e) => {
 			this.sortBy = (e.target as HTMLSelectElement).value as 'name' | 'date' | 'count';
-			this.render();
+			void this.render();
 		});
 
 		// Sort direction toggle
@@ -167,7 +167,7 @@ export class PlaylistQueueView extends ItemView {
 		setIcon(directionBtn, this.sortDirection === 'asc' ? 'arrow-up' : 'arrow-down');
 		directionBtn.addEventListener('click', () => {
 			this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-			this.render();
+			void this.render();
 		});
 	}
 
@@ -188,7 +188,7 @@ export class PlaylistQueueView extends ItemView {
 			backBtn.addEventListener('click', () => {
 				this.selectedPlaylist = null;
 				this.selectedQueue = null;
-				this.render();
+				void this.render();
 			});
 		}
 
@@ -214,7 +214,7 @@ export class PlaylistQueueView extends ItemView {
 			});
 			playlistBtn.addEventListener('click', () => {
 				this.viewMode = 'playlists';
-				this.render();
+				void this.render();
 			});
 
 			const queueBtn = modeToggle.createEl('button', {
@@ -223,7 +223,7 @@ export class PlaylistQueueView extends ItemView {
 			});
 			queueBtn.addEventListener('click', () => {
 				this.viewMode = 'queues';
-				this.render();
+				void this.render();
 			});
 		}
 
@@ -237,7 +237,7 @@ export class PlaylistQueueView extends ItemView {
 				attr: { 'aria-label': `Create new ${this.viewMode === 'playlists' ? 'playlist' : 'queue'}` }
 			});
 			setIcon(addBtn, 'plus');
-			addBtn.addEventListener('click', () => this.handleCreate());
+			addBtn.addEventListener('click', () => void this.handleCreate());
 		}
 	}
 
@@ -303,7 +303,7 @@ export class PlaylistQueueView extends ItemView {
 		// Click to view details
 		item.addEventListener('click', () => {
 			this.selectedPlaylist = playlist;
-			this.render();
+			void this.render();
 		});
 
 		// Context menu
@@ -378,7 +378,7 @@ export class PlaylistQueueView extends ItemView {
 		// Click to view details
 		item.addEventListener('click', () => {
 			this.selectedQueue = queue;
-			this.render();
+			void this.render();
 		});
 
 		// Context menu
@@ -571,7 +571,7 @@ export class PlaylistQueueView extends ItemView {
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedPlaylist = playlist;
-					this.render();
+					void this.render();
 				})
 		);
 
@@ -619,7 +619,7 @@ export class PlaylistQueueView extends ItemView {
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedQueue = queue;
-					this.render();
+					void this.render();
 				})
 		);
 

@@ -8,7 +8,7 @@
 import { logger } from '../utils/Logger';
 import { AudioPlaybackError } from '../utils/errorUtils';
 import { Episode, PodcastSettings, PlaybackState, Playlist } from '../model';
-import { PlaybackEngine, PlaybackStatus, PlaybackEventHandlers } from './PlaybackEngine';
+import { PlaybackEngine, PlaybackEventHandlers } from './PlaybackEngine';
 import { ProgressTracker } from './ProgressTracker';
 import { skipForward, skipBackward, getNextPlaybackSpeed } from '../utils/audioUtils';
 import { DEFAULT_SETTINGS } from '../model';
@@ -80,7 +80,7 @@ export class PlayerController {
 			},
 
 			onEnded: () => {
-				this.handleEpisodeEnded();
+				void this.handleEpisodeEnded();
 			},
 
 			onTimeUpdate: (currentTime: number) => {
@@ -154,7 +154,7 @@ export class PlayerController {
 			}
 
 			// Load audio
-			await this.engine.load(episode.audioUrl);
+			this.engine.load(episode.audioUrl);
 
 			// Set current episode
 			this.currentEpisode = episode;

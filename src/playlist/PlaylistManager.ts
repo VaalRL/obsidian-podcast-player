@@ -7,7 +7,7 @@
 
 import { App } from 'obsidian';
 import { logger } from '../utils/Logger';
-import { Playlist, Episode } from '../model';
+import { Playlist } from '../model';
 import { PlaylistStore } from './PlaylistStore';
 
 /**

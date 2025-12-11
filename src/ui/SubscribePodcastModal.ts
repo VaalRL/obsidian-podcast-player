@@ -183,9 +183,9 @@ export class SubscribePodcastModal extends Modal {
 			cls: 'mod-cta'
 		});
 		subscribeBtn.disabled = this.selectedFeeds.size === 0;
-		subscribeBtn.addEventListener('click', async () => {
+		subscribeBtn.addEventListener('click', () => {
 			if (this.selectedFeeds.size > 0) {
-				await this.handleSubscribeMultiple(Array.from(this.selectedFeeds));
+				void this.handleSubscribeMultiple(Array.from(this.selectedFeeds));
 			}
 		});
 	}
@@ -221,9 +221,9 @@ export class SubscribePodcastModal extends Modal {
 			.addEventListener('click', () => this.close());
 
 		const subscribeBtn = buttonContainer.createEl('button', { text: 'Subscribe', cls: 'mod-cta' });
-		subscribeBtn.addEventListener('click', async () => {
+		subscribeBtn.addEventListener('click', () => {
 			if (this.feedUrl.trim()) {
-				await this.handleSubscribeByUrl(this.feedUrl.trim());
+				void this.handleSubscribeByUrl(this.feedUrl.trim());
 			} else {
 				new Notice('Please enter a URL');
 			}
@@ -260,11 +260,11 @@ export class SubscribePodcastModal extends Modal {
 			fileInput.click();
 		});
 
-		fileInput.addEventListener('change', async (e) => {
+		fileInput.addEventListener('change', (e) => {
 			const target = e.target as HTMLInputElement;
 			const file = target.files?.[0];
 			if (file) {
-				await this.handleOpmlFile(file, fileSection);
+				void this.handleOpmlFile(file, fileSection);
 			}
 		});
 
@@ -287,9 +287,9 @@ export class SubscribePodcastModal extends Modal {
 			cls: 'mod-cta'
 		});
 		subscribeBtn.disabled = this.selectedOpmlFeeds.size === 0;
-		subscribeBtn.addEventListener('click', async () => {
+		subscribeBtn.addEventListener('click', () => {
 			if (this.selectedOpmlFeeds.size > 0) {
-				await this.handleSubscribeMultiple(Array.from(this.selectedOpmlFeeds));
+				void this.handleSubscribeMultiple(Array.from(this.selectedOpmlFeeds));
 			}
 		});
 	}

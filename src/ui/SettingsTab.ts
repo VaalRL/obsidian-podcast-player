@@ -180,9 +180,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.addText(text => text
 				.setPlaceholder('e.g., Daily Notes')
 				.setValue(this.settings.dailyNoteFolderPath)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.settings.dailyNoteFolderPath = value;
-					await this.saveSettings();
+					void this.saveSettings();
 				}));
 
 		// Daily note date format
@@ -192,9 +192,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.addText(text => text
 				.setPlaceholder('YYYY-MM-DD')
 				.setValue(this.settings.dailyNoteDateFormat)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.settings.dailyNoteDateFormat = value || 'YYYY-MM-DD';
-					await this.saveSettings();
+					void this.saveSettings();
 				}));
 
 		// Note insert position
@@ -205,9 +205,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				.addOption('top', 'Top of file')
 				.addOption('bottom', 'Bottom of file')
 				.setValue(this.settings.dailyNoteInsertPosition)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.settings.dailyNoteInsertPosition = value as 'top' | 'bottom' | 'cursor';
-					await this.saveSettings();
+					void this.saveSettings();
 				}));
 	}
 
@@ -306,8 +306,8 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setDesc('Export your podcast subscriptions to OPML format (compatible with other podcast apps)')
 			.addButton(button => button
 				.setButtonText('Export OPML')
-				.onClick(async () => {
-					await this.exportOPML();
+				.onClick(() => {
+					void this.exportOPML();
 				}));
 
 		// OPML Import
@@ -316,8 +316,8 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setDesc('Import podcast subscriptions from an OPML file')
 			.addButton(button => button
 				.setButtonText('Import OPML')
-				.onClick(async () => {
-					await this.importOPML();
+				.onClick(() => {
+					void this.importOPML();
 				}));
 
 		// Full Backup Export
@@ -326,8 +326,8 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setDesc('Export all data including subscriptions, playlists, queues, progress, and settings')
 			.addButton(button => button
 				.setButtonText('Export Backup')
-				.onClick(async () => {
-					await this.exportFullBackup();
+				.onClick(() => {
+					void this.exportFullBackup();
 				}));
 
 		// Full Backup Import
@@ -337,8 +337,8 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.addButton(button => button
 				.setButtonText('Import Backup')
 				.setWarning()
-				.onClick(async () => {
-					await this.importFullBackup();
+				.onClick(() => {
+					void this.importFullBackup();
 				}));
 
 		// Auto backup info

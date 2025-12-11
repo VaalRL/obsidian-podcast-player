@@ -26,7 +26,7 @@ export class AddToPlaylistModal extends Modal {
 		this.onSubmit = onSubmit;
 	}
 
-	onOpen() {
+	onOpen(): void {
 		void this.renderContent();
 	}
 
@@ -112,40 +112,42 @@ export class AddToPlaylistModal extends Modal {
 			.addEventListener('click', () => this.close());
 
 		buttonContainer.createEl('button', { text: 'Add', cls: 'mod-cta' })
-			.addEventListener('click', async () => {
-				try {
-					let playlistId: string;
+			.addEventListener('click', () => {
+				void (async () => {
+					try {
+						let playlistId: string;
 
-					if (selectedPlaylistId) {
-						// Add to existing playlist
-						playlistId = selectedPlaylistId;
-					} else {
-						// Create new playlist
-						if (!newPlaylistName.trim()) {
-							new Notice('Please enter a playlist name');
-							return;
+						if (selectedPlaylistId) {
+							// Add to existing playlist
+							playlistId = selectedPlaylistId;
+						} else {
+							// Create new playlist
+							if (!newPlaylistName.trim()) {
+								new Notice('Please enter a playlist name');
+								return;
+							}
+
+							const newPlaylist = await playlistManager.createPlaylist(
+								newPlaylistName.trim(),
+								newPlaylistDescription.trim() || undefined
+							);
+							playlistId = newPlaylist.id;
 						}
 
-						const newPlaylist = await playlistManager.createPlaylist(
-							newPlaylistName.trim(),
-							newPlaylistDescription.trim() || undefined
-						);
-						playlistId = newPlaylist.id;
+						// Add episodes to playlist
+						for (const episode of this.episodes) {
+							await playlistManager.addEpisode(playlistId, episode.id);
+						}
+
+						this.onSubmit(playlistId);
+						this.close();
+
+						new Notice(`Added to playlist successfully`);
+					} catch (error) {
+						console.error('Failed to add to playlist:', error);
+						new Notice('Failed to add to playlist');
 					}
-
-					// Add episodes to playlist
-					for (const episode of this.episodes) {
-						await playlistManager.addEpisode(playlistId, episode.id);
-					}
-
-					this.onSubmit(playlistId);
-					this.close();
-
-					new Notice(`Added to playlist successfully`);
-				} catch (error) {
-					console.error('Failed to add to playlist:', error);
-					new Notice('Failed to add to playlist');
-				}
+				})();
 			});
 	}
 

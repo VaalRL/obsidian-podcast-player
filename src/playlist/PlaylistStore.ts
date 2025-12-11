@@ -99,7 +99,15 @@ export class PlaylistStore extends MultiFileStore<Playlist[], Playlist> {
 
 		for (const id of ids) {
 			try {
-				const playlist = await this.loadItem(id, null as any);
+				const defaultPlaylist: Playlist = {
+					id: '',
+					name: '',
+					description: '',
+					episodeIds: [],
+					createdAt: new Date(),
+					updatedAt: new Date()
+				};
+				const playlist = await this.loadItem(id, defaultPlaylist);
 				if (playlist && this.validatePlaylist(playlist)) {
 					playlists.push(playlist);
 				}
@@ -149,7 +157,15 @@ export class PlaylistStore extends MultiFileStore<Playlist[], Playlist> {
 		logger.methodEntry('PlaylistStore', 'getPlaylist', id);
 
 		try {
-			const playlist = await this.loadItem(id, null as any);
+			const defaultPlaylist: Playlist = {
+				id: '',
+				name: '',
+				description: '',
+				episodeIds: [],
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+			const playlist = await this.loadItem(id, defaultPlaylist);
 
 			if (!playlist || !this.validatePlaylist(playlist)) {
 				logger.methodExit('PlaylistStore', 'getPlaylist', 'invalid');

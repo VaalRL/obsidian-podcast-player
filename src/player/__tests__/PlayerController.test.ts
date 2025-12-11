@@ -29,7 +29,7 @@ describe('PlayerController', () => {
 	beforeEach(() => {
 		// Create mocked PlaybackEngine
 		mockEngine = {
-			load: jest.fn().mockResolvedValue(undefined),
+			load: jest.fn().mockReturnValue(undefined),
 			play: jest.fn().mockResolvedValue(undefined),
 			pause: jest.fn().mockReturnValue(undefined),
 			stop: jest.fn().mockReturnValue(undefined),
@@ -45,7 +45,7 @@ describe('PlayerController', () => {
 			isPaused: jest.fn().mockReturnValue(false),
 			setEventHandlers: jest.fn(),
 			destroy: jest.fn(),
-		} as any;
+		} as unknown as jest.Mocked<PlaybackEngine>;
 
 		// Create mocked ProgressTracker
 		mockProgressTracker = {
@@ -55,7 +55,7 @@ describe('PlayerController', () => {
 			markCompleted: jest.fn().mockResolvedValue(undefined),
 			shouldResume: jest.fn().mockResolvedValue(false),
 			getResumePosition: jest.fn().mockResolvedValue(0),
-		} as any;
+		} as unknown as jest.Mocked<ProgressTracker>;
 
 		playerController = new PlayerController(mockEngine, mockProgressTracker);
 	});
@@ -130,7 +130,9 @@ describe('PlayerController', () => {
 
 		it('should handle load errors', async () => {
 			const error = new Error('Load failed');
-			mockEngine.load.mockRejectedValue(error);
+			mockEngine.load.mockImplementation(() => {
+				throw error;
+			});
 
 			await expect(playerController.loadEpisode(testEpisode, false, false)).rejects.toThrow('Load failed');
 

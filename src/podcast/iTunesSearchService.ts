@@ -6,7 +6,7 @@
  */
 
 import { logger } from '../utils/Logger';
-import { NetworkError, handleError, retryWithBackoff } from '../utils/errorUtils';
+import { NetworkError, retryWithBackoff } from '../utils/errorUtils';
 import { PodcastSearchResult } from '../model';
 import { requestUrl } from 'obsidian';
 
@@ -157,10 +157,7 @@ export class iTunesSearchService {
 			logger.error('iTunes search failed', error);
 
 			if (error instanceof NetworkError) {
-				logger.error('Network error details:', {
-					message: error.message,
-					url: error.url,
-				});
+				logger.debug('Network error details:', `message: ${error.message}, url: ${error.url}`);
 			}
 
 			// Return empty array instead of throwing for better UX

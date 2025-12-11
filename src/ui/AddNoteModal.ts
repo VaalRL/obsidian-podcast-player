@@ -4,7 +4,7 @@
  * Allows users to add timestamped notes that will be inserted into their daily note.
  */
 
-import { App, Modal, Notice, TextAreaComponent } from 'obsidian';
+import { App, Modal, Notice, TextAreaComponent, TFile } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Episode, Podcast } from '../model';
 
@@ -99,13 +99,13 @@ export class AddNoteModal extends Modal {
             text: 'Add note',
             cls: 'mod-cta'
         });
-        submitBtn.addEventListener('click', () => this.handleSubmit());
+        submitBtn.addEventListener('click', () => void this.handleSubmit());
 
         // Handle Enter+Ctrl/Cmd to submit
         textArea.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
-                this.handleSubmit();
+                void this.handleSubmit();
             }
         });
     }
@@ -157,9 +157,9 @@ export class AddNoteModal extends Modal {
             file = await this.app.vault.create(fullPath, '');
         }
 
-        if (file && 'path' in file) {
+        if (file && file instanceof TFile) {
             // Read existing content
-            const content = await this.app.vault.read(file as any);
+            const content = await this.app.vault.read(file);
 
             // Insert based on position setting
             let newContent: string;
@@ -172,7 +172,7 @@ export class AddNoteModal extends Modal {
                 newContent = content + (content.endsWith('\n') ? '' : '\n') + '\n' + noteEntry;
             }
 
-            await this.app.vault.modify(file as any, newContent);
+            await this.app.vault.modify(file, newContent);
         }
     }
 

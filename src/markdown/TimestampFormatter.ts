@@ -6,7 +6,7 @@
  */
 
 import { logger } from '../utils/Logger';
-import { formatTime, formatTimestamp } from '../utils/timeUtils';
+import { formatTime } from '../utils/timeUtils';
 import { Episode } from '../model';
 
 /**

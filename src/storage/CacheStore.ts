@@ -108,7 +108,14 @@ export class FeedCacheStore extends MultiFileStore<FeedCacheEntry[], FeedCacheEn
 
 		for (const id of ids) {
 			try {
-				const entry = await this.loadItem(id, null as any);
+				const defaultEntry: FeedCacheEntry = {
+					data: '',
+					cachedAt: new Date(),
+					expiresAt: new Date(),
+					url: '',
+					feedUrl: ''
+				};
+				const entry = await this.loadItem(id, defaultEntry);
 				if (entry && this.validateEntry(entry)) {
 					entries.push(entry);
 				}
@@ -175,7 +182,14 @@ export class FeedCacheStore extends MultiFileStore<FeedCacheEntry[], FeedCacheEn
 		const id = this.getFeedCacheId(feedUrl);
 
 		try {
-			const entry = await this.loadItem(id, null as any);
+			const defaultEntry: FeedCacheEntry = {
+				data: '',
+				cachedAt: new Date(),
+				expiresAt: new Date(),
+				url: '',
+				feedUrl: ''
+			};
+			const entry = await this.loadItem(id, defaultEntry);
 
 			if (!entry || !this.validateEntry(entry)) {
 				logger.methodExit('FeedCacheStore', 'getCacheEntry', 'invalid entry');

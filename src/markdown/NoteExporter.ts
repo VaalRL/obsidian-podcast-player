@@ -9,7 +9,6 @@ import { Vault, TFile, normalizePath } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { Episode, Podcast, PlayProgress } from '../model';
 import { formatDate, formatDuration } from '../utils/timeUtils';
-import { TimestampFormatter } from './TimestampFormatter';
 
 /**
  * Note export options

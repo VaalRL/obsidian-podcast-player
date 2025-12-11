@@ -19,21 +19,21 @@ export class PodcastPlayerError extends Error {
 }
 
 export class FeedParseError extends PodcastPlayerError {
-	constructor(message: string, public readonly feedUrl: string, public readonly cause?: Error | unknown) {
+	constructor(message: string, public readonly feedUrl: string, public readonly cause?: Error) {
 		super(message, 'FEED_PARSE_ERROR');
 		this.name = 'FeedParseError';
 	}
 }
 
 export class NetworkError extends PodcastPlayerError {
-	constructor(message: string, public readonly url: string, public readonly cause?: Error | unknown) {
+	constructor(message: string, public readonly url: string, public readonly cause?: Error) {
 		super(message, 'NETWORK_ERROR');
 		this.name = 'NetworkError';
 	}
 }
 
 export class AudioPlaybackError extends PodcastPlayerError {
-	constructor(message: string, public readonly audioUrl?: string, public readonly cause?: Error | unknown) {
+	constructor(message: string, public readonly audioUrl?: string, public readonly cause?: Error) {
 		super(message, 'AUDIO_PLAYBACK_ERROR');
 		this.name = 'AudioPlaybackError';
 	}
@@ -54,7 +54,7 @@ export class StorageError extends PodcastPlayerError {
  * Handle an error by logging it and optionally showing a notice to the user
  */
 export function handleError(
-	error: Error | unknown,
+	error: unknown,
 	userMessage?: string,
 	showNotice = true
 ): void {
@@ -62,7 +62,7 @@ export function handleError(
 	if (error instanceof Error) {
 		logger.error(error.message, error);
 	} else {
-		logger.error('Unknown error occurred', error);
+		logger.error('Unknown error occurred', error instanceof Error ? error : undefined);
 	}
 
 	// Show notice to user if requested
@@ -75,7 +75,7 @@ export function handleError(
 /**
  * Get a user-friendly error message from an error object
  */
-export function getErrorMessage(error: Error | unknown): string {
+export function getErrorMessage(error: unknown): string {
 	if (error instanceof PodcastPlayerError) {
 		return error.message;
 	}
@@ -94,7 +94,7 @@ export function getErrorMessage(error: Error | unknown): string {
 /**
  * Check if an error is a network error
  */
-export function isNetworkError(error: Error | unknown): boolean {
+export function isNetworkError(error: unknown): boolean {
 	if (error instanceof NetworkError) {
 		return true;
 	}
@@ -115,13 +115,13 @@ export function isNetworkError(error: Error | unknown): boolean {
 /**
  * Wrap an async function with error handling
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
+export function withErrorHandling<T extends (...args: unknown[]) => Promise<unknown>>(
 	fn: T,
 	errorMessage?: string
 ): T {
 	return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
 		try {
-			return await fn(...args);
+			return await fn(...args) as ReturnType<T>;
 		} catch (error) {
 			handleError(error, errorMessage);
 			throw error;
@@ -148,7 +148,7 @@ export async function retryWithBackoff<T>(
 		backoffMultiplier = 2,
 	} = options;
 
-	let lastError: Error | unknown;
+	let lastError: unknown;
 	let delay = initialDelay;
 
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {

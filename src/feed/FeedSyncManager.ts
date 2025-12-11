@@ -279,7 +279,7 @@ export class FeedSyncManager {
 		logger.debug(`Updating podcast: ${podcast.title}`);
 
 		try {
-			const { podcast: updatedPodcast, episodes, newEpisodes } = await this.feedService.updateFeed(podcast);
+			const { podcast: updatedPodcast, newEpisodes } = await this.feedService.updateFeed(podcast);
 
 			// Merge new episodes with existing ones
 			const existingEpisodes = podcast.episodes || [];

@@ -404,7 +404,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Stop player
 		if (this.playerController) {
-			this.playerController.stop();
+			void this.playerController.stop();
 		}
 
 		// Stop cleanup service

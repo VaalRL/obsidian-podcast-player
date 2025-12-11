@@ -170,10 +170,10 @@ export class EpisodeManager {
 	/**
 	 * Filter episodes
 	 */
-	async filterEpisodes(
+	filterEpisodes(
 		episodes: EpisodeWithProgress[],
 		filter: EpisodeFilter
-	): Promise<EpisodeWithProgress[]> {
+	): EpisodeWithProgress[] {
 		logger.methodEntry('EpisodeManager', 'filterEpisodes', `count=${episodes.length}`);
 
 		let filtered = [...episodes];

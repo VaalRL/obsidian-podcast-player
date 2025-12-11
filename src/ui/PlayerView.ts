@@ -7,7 +7,7 @@
 
 import { ItemView, WorkspaceLeaf, setIcon, Notice, Events } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { PlaybackState, Queue, Episode, Playlist } from '../model';
+import { PlaybackState, Queue, Playlist } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { AddNoteModal } from './AddNoteModal';
@@ -224,7 +224,7 @@ export class PlayerView extends ItemView {
 			attr: { 'aria-label': 'Play/Pause' }
 		});
 		setIcon(playPauseBtn, 'play');
-		playPauseBtn.addEventListener('click', () => this.handlePlayPause());
+		playPauseBtn.addEventListener('click', () => void this.handlePlayPause());
 
 		// Skip forward button
 		const skipForwardBtn = controlsSection.createEl('button', {
@@ -329,7 +329,7 @@ export class PlayerView extends ItemView {
 		});
 
 		// Keyboard controls
-		progressBarContainer.addEventListener('keydown', async (e) => {
+		progressBarContainer.addEventListener('keydown', (e) => {
 			const playerController = this.plugin.playerController;
 			const state = playerController.getState();
 			if (!state.currentEpisode) return;
@@ -359,7 +359,7 @@ export class PlayerView extends ItemView {
 					return;
 			}
 
-			await playerController.seek(newPosition);
+			playerController.seek(newPosition);
 		});
 
 		// Tooltip behavior
@@ -409,7 +409,7 @@ export class PlayerView extends ItemView {
 			const target = e.target as HTMLInputElement;
 			const volume = parseInt(target.value);
 			volumeLabel.textContent = String(volume);
-			this.handleVolumeChange(volume);
+			void this.handleVolumeChange(volume);
 		});
 
 		// Speed control
@@ -435,7 +435,7 @@ export class PlayerView extends ItemView {
 			const target = e.target as HTMLInputElement;
 			const speed = parseFloat(target.value);
 			speedLabel.textContent = `${speed.toFixed(1)}x`;
-			this.handleSpeedChange(speed);
+			void this.handleSpeedChange(speed);
 		});
 	}
 
@@ -1299,35 +1299,37 @@ export class PlayerView extends ItemView {
 		}
 
 		// Click to play/pause
-		item.addEventListener('click', async () => {
-			try {
-				const playerController = this.plugin.playerController;
-				const playerState = playerController.getState();
+		item.addEventListener('click', () => {
+			void (async () => {
+				try {
+					const playerController = this.plugin.playerController;
+					const playerState = playerController.getState();
 
-				if (isCurrent) {
-					// Current episode - toggle play/pause
-					if (playerState.status === 'playing') {
-						await playerController.pause();
+					if (isCurrent) {
+						// Current episode - toggle play/pause
+						if (playerState.status === 'playing') {
+							await playerController.pause();
+						} else {
+							await playerController.play();
+						}
 					} else {
-						await playerController.play();
-					}
-				} else {
-					// Other episodes - jump to and play
-					const queueManager = this.plugin.getQueueManager();
-					if (this.currentQueueId) {
-						// Jump to this episode in the queue
-						await queueManager.jumpTo(this.currentQueueId, index);
+						// Other episodes - jump to and play
+						const queueManager = this.plugin.getQueueManager();
+						if (this.currentQueueId) {
+							// Jump to this episode in the queue
+							await queueManager.jumpTo(this.currentQueueId, index);
 
-						// Load and play the episode
-						await playerController.loadEpisode(episode, true, true);
+							// Load and play the episode
+							await playerController.loadEpisode(episode, true, true);
 
-						// Refresh UI
-						await this.renderPlayer();
+							// Refresh UI
+							await this.renderPlayer();
+						}
 					}
+				} catch (error) {
+					console.error('Failed to play/pause episode from queue:', error);
 				}
-			} catch (error) {
-				console.error('Failed to play/pause episode from queue:', error);
-			}
+			})();
 		});
 	}
 

@@ -26,7 +26,7 @@ export class AddToQueueModal extends Modal {
 		this.onSubmit = onSubmit;
 	}
 
-	onOpen() {
+	onOpen(): void {
 		void this.renderContent();
 	}
 
@@ -100,37 +100,39 @@ export class AddToQueueModal extends Modal {
 			.addEventListener('click', () => this.close());
 
 		buttonContainer.createEl('button', { text: 'Add', cls: 'mod-cta' })
-			.addEventListener('click', async () => {
-				try {
-					let queueId: string;
+			.addEventListener('click', () => {
+				void (async () => {
+					try {
+						let queueId: string;
 
-					if (selectedQueueId) {
-						// Add to existing queue
-						queueId = selectedQueueId;
-					} else {
-						// Create new queue
-						if (!newQueueName.trim()) {
-							new Notice('Please enter a queue name');
-							return;
+						if (selectedQueueId) {
+							// Add to existing queue
+							queueId = selectedQueueId;
+						} else {
+							// Create new queue
+							if (!newQueueName.trim()) {
+								new Notice('Please enter a queue name');
+								return;
+							}
+
+							const newQueue = await queueManager.createQueue(newQueueName.trim());
+							queueId = newQueue.id;
 						}
 
-						const newQueue = await queueManager.createQueue(newQueueName.trim());
-						queueId = newQueue.id;
+						// Add episodes to queue
+						for (const episode of this.episodes) {
+							await queueManager.addEpisode(queueId, episode.id);
+						}
+
+						this.onSubmit(queueId);
+						this.close();
+
+						new Notice(`Added to queue successfully`);
+					} catch (error) {
+						console.error('Failed to add to queue:', error);
+						new Notice('Failed to add to queue');
 					}
-
-					// Add episodes to queue
-					for (const episode of this.episodes) {
-						await queueManager.addEpisode(queueId, episode.id);
-					}
-
-					this.onSubmit(queueId);
-					this.close();
-
-					new Notice(`Added to queue successfully`);
-				} catch (error) {
-					console.error('Failed to add to queue:', error);
-					new Notice('Failed to add to queue');
-				}
+				})();
 			});
 	}
 
