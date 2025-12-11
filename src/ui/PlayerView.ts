@@ -165,7 +165,7 @@ export class PlayerView extends ItemView {
 
 		// Info button to view episode details
 		const infoBtn = titleContainer.createEl('button', {
-			cls: 'player-info-button podcast-display-none',
+			cls: 'player-info-button clickable-icon podcast-display-none',
 			attr: { 'aria-label': 'View episode details' }
 		});
 		setIcon(infoBtn, 'info');
@@ -200,7 +200,7 @@ export class PlayerView extends ItemView {
 
 		// Previous button
 		const prevBtn = controlsSection.createEl('button', {
-			cls: 'player-button player-button-prev',
+			cls: 'player-button player-button-prev clickable-icon',
 			attr: { 'aria-label': 'Previous episode' }
 		});
 		setIcon(prevBtn, 'skip-back');
@@ -208,7 +208,7 @@ export class PlayerView extends ItemView {
 
 		// Skip backward button
 		const skipBackBtn = controlsSection.createEl('button', {
-			cls: 'player-button player-button-skip-back',
+			cls: 'player-button player-button-skip-back clickable-icon',
 			attr: { 'aria-label': 'Skip backward 15s' }
 		});
 		setIcon(skipBackBtn, 'rewind');
@@ -216,7 +216,7 @@ export class PlayerView extends ItemView {
 
 		// Play/Pause button
 		const playPauseBtn = controlsSection.createEl('button', {
-			cls: 'player-button player-button-play-pause',
+			cls: 'player-button player-button-play-pause clickable-icon',
 			attr: { 'aria-label': 'Play/Pause' }
 		});
 		setIcon(playPauseBtn, 'play');
@@ -224,7 +224,7 @@ export class PlayerView extends ItemView {
 
 		// Skip forward button
 		const skipForwardBtn = controlsSection.createEl('button', {
-			cls: 'player-button player-button-skip-forward',
+			cls: 'player-button player-button-skip-forward clickable-icon',
 			attr: { 'aria-label': 'Skip forward 30s' }
 		});
 		setIcon(skipForwardBtn, 'fast-forward');
@@ -232,7 +232,7 @@ export class PlayerView extends ItemView {
 
 		// Next button
 		const nextBtn = controlsSection.createEl('button', {
-			cls: 'player-button player-button-next',
+			cls: 'player-button player-button-next clickable-icon',
 			attr: { 'aria-label': 'Next episode' }
 		});
 		setIcon(nextBtn, 'skip-forward');
@@ -240,7 +240,7 @@ export class PlayerView extends ItemView {
 
 		// Add to Note button
 		const addNoteBtn = controlsSection.createEl('button', {
-			cls: 'player-button player-button-add-note',
+			cls: 'player-button player-button-add-note clickable-icon',
 			attr: { 'aria-label': 'Add note to daily note' }
 		});
 		setIcon(addNoteBtn, 'file-plus');

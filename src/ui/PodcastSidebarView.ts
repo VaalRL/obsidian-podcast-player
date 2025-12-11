@@ -190,7 +190,7 @@ export class PodcastSidebarView extends ItemView {
 		});
 
 		const searchBtn = searchContainer.createEl('button', {
-			cls: 'sidebar-search-button',
+			cls: 'sidebar-search-button clickable-icon',
 			attr: { 'aria-label': 'Search' }
 		});
 		setIcon(searchBtn, 'search');
@@ -219,7 +219,7 @@ export class PodcastSidebarView extends ItemView {
 		// Clear button (if there's a search query)
 		if (this.searchQuery) {
 			const clearBtn = searchContainer.createEl('button', {
-				cls: 'sidebar-search-clear',
+				cls: 'sidebar-search-clear clickable-icon',
 				attr: { 'aria-label': 'Clear search' }
 			});
 			setIcon(clearBtn, 'x');
@@ -248,7 +248,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Sort button (Icon only)
 		const sortBtn = searchContainer.createEl('button', {
-			cls: 'sort-direction-button',
+			cls: 'sort-direction-button clickable-icon',
 			attr: { 'aria-label': 'Sort options' }
 		});
 		setIcon(sortBtn, currentDirection === 'asc' ? 'arrow-up' : 'arrow-down');
@@ -321,7 +321,7 @@ export class PodcastSidebarView extends ItemView {
 		// Back button (if viewing details) - now inside header
 		if (this.selectedPodcast || this.selectedPlaylist || this.selectedQueue) {
 			const backBtn = header.createEl('button', {
-				cls: 'sidebar-back-button',
+				cls: 'sidebar-back-button clickable-icon',
 				attr: { 'aria-label': 'Back to list' }
 			});
 			setIcon(backBtn, 'arrow-left');
@@ -360,7 +360,7 @@ export class PodcastSidebarView extends ItemView {
 			if (this.viewMode === 'podcasts') {
 				// Toggle view mode button (feeds vs all episodes)
 				const toggleViewBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
+					cls: 'sidebar-action-button clickable-icon',
 					attr: { 'aria-label': this.feedsViewMode === 'feeds' ? 'Show all episodes' : 'Show feeds' }
 				});
 				setIcon(toggleViewBtn, this.feedsViewMode === 'feeds' ? 'list' : 'rss');
@@ -371,7 +371,7 @@ export class PodcastSidebarView extends ItemView {
 
 				// Add podcast button
 				const addBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
+					cls: 'sidebar-action-button clickable-icon',
 					attr: { 'aria-label': 'Subscribe to podcast' }
 				});
 				setIcon(addBtn, 'plus');
@@ -379,7 +379,7 @@ export class PodcastSidebarView extends ItemView {
 
 				// Refresh button
 				const refreshBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
+					cls: 'sidebar-action-button clickable-icon',
 					attr: { 'aria-label': 'Refresh feeds' }
 				});
 				setIcon(refreshBtn, 'refresh-cw');
@@ -387,7 +387,7 @@ export class PodcastSidebarView extends ItemView {
 			} else {
 				// Create new (queue or playlist) button
 				const addBtn = actions.createEl('button', {
-					cls: 'sidebar-action-button',
+					cls: 'sidebar-action-button clickable-icon',
 					attr: { 'aria-label': 'Create new' }
 				});
 				setIcon(addBtn, 'plus');
@@ -414,7 +414,7 @@ export class PodcastSidebarView extends ItemView {
 		} else if (this.selectedPodcast) {
 			// Settings button (for selected podcast)
 			const settingsBtn = actions.createEl('button', {
-				cls: 'sidebar-action-button',
+				cls: 'sidebar-action-button clickable-icon',
 				attr: { 'aria-label': 'Podcast settings' }
 			});
 			setIcon(settingsBtn, 'settings');
@@ -422,7 +422,7 @@ export class PodcastSidebarView extends ItemView {
 		} else if (this.selectedPlaylist) {
 			// Rename button (for selected playlist)
 			const renameBtn = actions.createEl('button', {
-				cls: 'sidebar-action-button',
+				cls: 'sidebar-action-button clickable-icon',
 				attr: { 'aria-label': 'Rename playlist' }
 			});
 			setIcon(renameBtn, 'pencil');
@@ -430,7 +430,7 @@ export class PodcastSidebarView extends ItemView {
 		} else if (this.selectedQueue) {
 			// Rename button (for selected queue)
 			const renameBtn = actions.createEl('button', {
-				cls: 'sidebar-action-button',
+				cls: 'sidebar-action-button clickable-icon',
 				attr: { 'aria-label': 'Rename queue' }
 			});
 			setIcon(renameBtn, 'pencil');
@@ -604,7 +604,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Play button
 		const playBtn = actions.createEl('button', {
-			cls: 'episode-action-button',
+			cls: 'episode-action-button clickable-icon',
 			attr: { 'aria-label': 'Play episode' }
 		});
 		setIcon(playBtn, 'play');
@@ -615,7 +615,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Add to button
 		const addBtn = actions.createEl('button', {
-			cls: 'episode-action-button',
+			cls: 'episode-action-button clickable-icon',
 			attr: { 'aria-label': 'Add to queue or playlist' }
 		});
 		setIcon(addBtn, 'plus');
@@ -771,7 +771,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Play button
 		const playBtn = actions.createEl('button', {
-			cls: 'episode-action-button',
+			cls: 'episode-action-button clickable-icon',
 			attr: { 'aria-label': 'Play' }
 		});
 		setIcon(playBtn, 'play');
@@ -782,7 +782,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Add button
 		const addBtn = actions.createEl('button', {
-			cls: 'episode-action-button',
+			cls: 'episode-action-button clickable-icon',
 			attr: { 'aria-label': 'Add to playlist' }
 		});
 		setIcon(addBtn, 'plus');
@@ -1503,7 +1503,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Play button
 		const playBtn = item.createEl('button', {
-			cls: 'playlist-play-button',
+			cls: 'playlist-play-button clickable-icon',
 			attr: { 'aria-label': 'Play queue' }
 		});
 		setIcon(playBtn, 'play');
@@ -1665,7 +1665,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Play button
 		const playBtn = item.createEl('button', {
-			cls: 'playlist-play-button',
+			cls: 'playlist-play-button clickable-icon',
 			attr: { 'aria-label': 'Play playlist' }
 		});
 		setIcon(playBtn, 'play');
@@ -1843,7 +1843,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Delete button
 		const deleteBtn = item.createEl('button', {
-			cls: 'playlist-episode-delete',
+			cls: 'playlist-episode-delete clickable-icon',
 			attr: { 'aria-label': 'Remove from playlist' }
 		});
 		setIcon(deleteBtn, 'trash');
@@ -1948,7 +1948,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Delete button
 		const deleteBtn = item.createEl('button', {
-			cls: 'playlist-episode-delete',
+			cls: 'playlist-episode-delete clickable-icon',
 			attr: { 'aria-label': 'Remove from queue' }
 		});
 		setIcon(deleteBtn, 'trash');
@@ -2209,7 +2209,7 @@ export class PodcastSidebarView extends ItemView {
 		// Play All button
 		const playAllBtn = header.createEl('button', {
 			text: 'Play queue',
-			cls: 'playlist-play-all-button'
+			cls: 'playlist-play-all-button clickable-icon'
 		});
 		setIcon(playAllBtn, 'play');
 		playAllBtn.addEventListener('click', () => {

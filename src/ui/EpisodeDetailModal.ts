@@ -232,20 +232,20 @@ export class EpisodeDetailModal extends Modal {
 
 		// Play button
 		const playBtn = actions.createEl('button', {
-			cls: 'mod-cta'
+			cls: 'mod-cta clickable-icon'
 		});
 		setIcon(playBtn, 'play');
 		playBtn.createSpan({ text: ' Play' });
 		playBtn.addEventListener('click', () => void this.handlePlay());
 
 		// Add to Queue button
-		const queueBtn = actions.createEl('button');
+		const queueBtn = actions.createEl('button', { cls: 'clickable-icon' });
 		setIcon(queueBtn, 'list-plus');
 		queueBtn.createSpan({ text: ' Add to queue' });
 		queueBtn.addEventListener('click', () => this.handleAddToQueue());
 
 		// Add to Playlist button
-		const playlistBtn = actions.createEl('button');
+		const playlistBtn = actions.createEl('button', { cls: 'clickable-icon' });
 		setIcon(playlistBtn, 'folder-plus');
 		playlistBtn.createSpan({ text: ' Add to playlist' });
 		playlistBtn.addEventListener('click', () => this.handleAddToPlaylist());

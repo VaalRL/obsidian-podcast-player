@@ -150,7 +150,7 @@ export class SubscribePodcastModal extends Modal {
 		});
 
 		const searchBtn = searchContainer.createEl('button', {
-			cls: 'subscribe-search-button',
+			cls: 'subscribe-search-button clickable-icon',
 			attr: { 'aria-label': 'Search' }
 		});
 		setIcon(searchBtn, 'search');
@@ -252,7 +252,7 @@ export class SubscribePodcastModal extends Modal {
 
 		const selectFileBtn = fileInputContainer.createEl('button', {
 			text: 'Select OPML file',
-			cls: 'subscribe-file-select-button'
+			cls: 'subscribe-file-select-button clickable-icon'
 		});
 		setIcon(selectFileBtn, 'file-up');
 
@@ -597,7 +597,7 @@ export class SubscribePodcastModal extends Modal {
 
 		// Previous button (arrow icon)
 		const prevBtn = pagination.createEl('button', {
-			cls: 'subscribe-pagination-button',
+			cls: 'subscribe-pagination-button clickable-icon',
 			attr: { 'aria-label': 'Previous page' }
 		});
 		setIcon(prevBtn, 'chevron-left');
@@ -617,7 +617,7 @@ export class SubscribePodcastModal extends Modal {
 
 		// Next button (arrow icon)
 		const nextBtn = pagination.createEl('button', {
-			cls: 'subscribe-pagination-button',
+			cls: 'subscribe-pagination-button clickable-icon',
 			attr: { 'aria-label': 'Next page' }
 		});
 		setIcon(nextBtn, 'chevron-right');

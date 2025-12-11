@@ -126,7 +126,7 @@ export class PlaylistQueueView extends ItemView {
 		// Clear button (if there's a search query)
 		if (this.searchQuery) {
 			const clearBtn = searchContainer.createEl('button', {
-				cls: 'pq-search-clear',
+				cls: 'pq-search-clear clickable-icon',
 				attr: { 'aria-label': 'Clear search' }
 			});
 			setIcon(clearBtn, 'x');
@@ -161,7 +161,7 @@ export class PlaylistQueueView extends ItemView {
 
 		// Sort direction toggle
 		const directionBtn = sortContainer.createEl('button', {
-			cls: 'sort-direction-button',
+			cls: 'sort-direction-button clickable-icon',
 			attr: { 'aria-label': 'Toggle sort direction' }
 		});
 		setIcon(directionBtn, this.sortDirection === 'asc' ? 'arrow-up' : 'arrow-down');
@@ -180,7 +180,7 @@ export class PlaylistQueueView extends ItemView {
 		// Back button (if viewing details)
 		if (this.selectedPlaylist || this.selectedQueue) {
 			const backBtn = header.createEl('button', {
-				cls: 'pq-back-button',
+				cls: 'pq-back-button clickable-icon',
 				attr: { 'aria-label': 'Back to list' }
 			});
 			setIcon(backBtn, 'arrow-left');
@@ -233,7 +233,7 @@ export class PlaylistQueueView extends ItemView {
 		if (!this.selectedPlaylist && !this.selectedQueue) {
 			// Add new button
 			const addBtn = actions.createEl('button', {
-				cls: 'pq-action-button',
+				cls: 'pq-action-button clickable-icon',
 				attr: { 'aria-label': `Create new ${this.viewMode === 'playlists' ? 'playlist' : 'queue'}` }
 			});
 			setIcon(addBtn, 'plus');
@@ -515,7 +515,7 @@ export class PlaylistQueueView extends ItemView {
 
 		// Play button
 		const playBtn = item.createEl('button', {
-			cls: 'pq-episode-play',
+			cls: 'pq-episode-play clickable-icon',
 			attr: { 'aria-label': 'Play episode' }
 		});
 		setIcon(playBtn, 'play');
