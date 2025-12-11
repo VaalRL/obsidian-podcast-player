@@ -7,7 +7,7 @@
 
 import { ItemView, WorkspaceLeaf, setIcon, Notice, Events } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { PlaybackState, Queue, Playlist } from '../model';
+import { Queue, Playlist } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { AddNoteModal } from './AddNoteModal';
@@ -152,16 +152,12 @@ export class PlayerView extends ItemView {
 	private renderEpisodeInfo(container: HTMLElement): void {
 		const infoSection = container.createDiv({ cls: 'episode-info-section' });
 
-		// Podcast thumbnail
-		const thumbnail = infoSection.createEl('img', {
-			cls: 'player-podcast-thumbnail podcast-display-none',
-			attr: { src: '', alt: 'Podcast Artwork' }
-		});
+		// Update UI initially
+		void this.updatePlayerState();
 
 		// Title container with info button
 		const titleContainer = infoSection.createDiv({ cls: 'episode-title-container' });
 
-		// Episode title
 		const title = titleContainer.createEl('h3', {
 			text: 'No episode playing',
 			cls: 'episode-title'
@@ -175,7 +171,7 @@ export class PlayerView extends ItemView {
 		setIcon(infoBtn, 'info');
 		infoBtn.addEventListener('click', () => this.handleShowEpisodeDetails());
 
-		const podcast = infoSection.createEl('p', {
+		infoSection.createEl('p', {
 			text: 'Select a podcast to start',
 			cls: 'podcast-name'
 		});
@@ -268,10 +264,10 @@ export class PlayerView extends ItemView {
 		progressBarContainer.setAttribute('role', 'slider');
 
 		const progressBar = progressBarContainer.createDiv({ cls: 'progress-bar' });
-		const progressFill = progressBar.createDiv({ cls: 'progress-fill podcast-progress-width-0' });
+		progressBar.createDiv({ cls: 'progress-fill podcast-progress-width-0' });
 
 		// Thumb element for precise positioning
-		const progressThumb = progressBar.createDiv({ cls: 'progress-bar-thumb podcast-progress-left-0' });
+		progressBar.createDiv({ cls: 'progress-bar-thumb podcast-progress-left-0' });
 
 		// Tooltip
 		const tooltip = progressBarContainer.createDiv({ cls: 'progress-tooltip' });
@@ -321,7 +317,7 @@ export class PlayerView extends ItemView {
 				document.removeEventListener('mouseup', onMouseUp);
 
 				// Commit seek
-				await playerController.seek(duration * finalPercentage);
+				playerController.seek(duration * finalPercentage);
 			};
 
 			document.addEventListener('mousemove', onMouseMove);
@@ -459,14 +455,14 @@ export class PlayerView extends ItemView {
 
 
 			if (state.status === 'playing') {
-				await playerController.pause();
+				playerController.pause();
 			} else if (state.status === 'paused') {
-				await playerController.play();
+				playerController.play();
 			} else if (state.status === 'stopped' && !state.currentEpisode) {
 				// No episode loaded - try to play from first queue's first episode
 				await this.playFromFirstQueue();
 			} else if (state.status === 'stopped') {
-				await playerController.play();
+				playerController.play();
 			}
 		} catch (error) {
 			console.error('Failed to toggle playback:', error);
@@ -636,7 +632,7 @@ export class PlayerView extends ItemView {
 	private async handleSkipBackward(): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
-			await playerController.skipBackward(15);
+			playerController.skipBackward(15);
 		} catch (error) {
 			console.error('Failed to skip backward:', error);
 		}
@@ -648,7 +644,7 @@ export class PlayerView extends ItemView {
 	private async handleSkipForward(): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
-			await playerController.skipForward(30);
+			playerController.skipForward(30);
 		} catch (error) {
 			console.error('Failed to skip forward:', error);
 		}
@@ -675,7 +671,7 @@ export class PlayerView extends ItemView {
 			const duration = state.currentEpisode.duration;
 			const targetPosition = duration * percentage;
 
-			await playerController.seek(targetPosition);
+			playerController.seek(targetPosition);
 		} catch (error) {
 			console.error('Failed to seek:', error);
 		}
@@ -688,7 +684,7 @@ export class PlayerView extends ItemView {
 		try {
 			const playerController = this.plugin.playerController;
 			// Convert percentage (0-100) to decimal (0-1)
-			await playerController.setVolume(volume / 100);
+			playerController.setVolume(volume / 100);
 		} catch (error) {
 			console.error('Failed to change volume:', error);
 		}
@@ -700,7 +696,7 @@ export class PlayerView extends ItemView {
 	private async handleSpeedChange(speed: number): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
-			await playerController.setPlaybackSpeed(speed);
+			playerController.setPlaybackSpeed(speed);
 		} catch (error) {
 			console.error('Failed to change playback speed:', error);
 		}
@@ -712,7 +708,7 @@ export class PlayerView extends ItemView {
 	private startUpdateInterval(): void {
 		// Update UI every second
 		this.updateInterval = window.setInterval(() => {
-			this.updatePlayerState();
+			void this.updatePlayerState();
 		}, 1000);
 	}
 

@@ -383,7 +383,7 @@ export class PodcastSidebarView extends ItemView {
 					attr: { 'aria-label': 'Refresh feeds' }
 				});
 				setIcon(refreshBtn, 'refresh-cw');
-				refreshBtn.addEventListener('click', () => this.handleRefreshFeeds());
+				refreshBtn.addEventListener('click', () => void this.handleRefreshFeeds());
 			} else {
 				// Create new (queue or playlist) button
 				const addBtn = actions.createEl('button', {
@@ -398,14 +398,14 @@ export class PodcastSidebarView extends ItemView {
 						item
 							.setTitle('New Queue')
 							.setIcon('list-ordered')
-							.onClick(() => this.handleCreateQueue())
+							.onClick(() => void this.handleCreateQueue())
 					);
 
 					menu.addItem((item) =>
 						item
 							.setTitle('New Playlist')
 							.setIcon('folder-plus')
-							.onClick(() => this.handleCreatePlaylist())
+							.onClick(() => void this.handleCreatePlaylist())
 					);
 
 					menu.showAtMouseEvent(e);
@@ -642,7 +642,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Podcast image
 		if (podcast.imageUrl) {
-			const img = item.createEl('img', {
+			item.createEl('img', {
 				cls: 'podcast-image',
 				attr: {
 					src: podcast.imageUrl,
@@ -1192,7 +1192,7 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('Export to Note')
 				.setIcon('file-text')
 				.onClick(() => {
-					this.handleExportToNote(episode);
+					void this.handleExportToNote(episode);
 				})
 		);
 
@@ -1514,7 +1514,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Click to view details
 		item.addEventListener('click', () => {
-			this.showQueueDetails(queue);
+			void this.showQueueDetails(queue);
 		});
 
 		// Context menu (limited options for queues)
@@ -1570,7 +1570,7 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('View Details')
 				.setIcon('list')
 				.onClick(() => {
-					this.showQueueDetails(queue);
+					void this.showQueueDetails(queue);
 				})
 		);
 
@@ -1671,13 +1671,13 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation(); // Prevent triggering item click
-			this.handlePlayPlaylist(playlist);
+			void this.handlePlayPlaylist(playlist);
 		});
 
 		// Click to view details
 		item.addEventListener('click', () => {
 			this.selectedPlaylist = playlist;
-			this.render();
+			void this.render();
 		});
 
 		// Context menu

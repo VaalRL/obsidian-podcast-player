@@ -5,7 +5,7 @@
  * Provides methods for adding, removing, updating, and retrieving subscriptions.
  */
 
-import { Vault, normalizePath } from 'obsidian';
+import { Vault } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { StorageError } from '../utils/errorUtils';
 import { Podcast } from '../model';

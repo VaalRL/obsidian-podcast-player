@@ -5,7 +5,7 @@
  * and improve performance. Supports cache expiration and cleanup.
  */
 
-import { Vault, normalizePath } from 'obsidian';
+import { Vault } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { StorageError } from '../utils/errorUtils';
 import { DataPathManager } from './DataPathManager';

@@ -184,7 +184,7 @@ export class NoteExporter {
 		podcast: Podcast,
 		progress?: PlayProgress
 	): string {
-		const frontMatter: Record<string, any> = {
+		const frontMatter: Record<string, unknown> = {
 			title: episode.title,
 			podcast: podcast.title,
 			author: podcast.author,

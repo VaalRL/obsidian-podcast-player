@@ -7,8 +7,8 @@
 
 import { requestUrl, RequestUrlParam } from 'obsidian';
 import { logger } from '../utils/Logger';
-import { FeedParseError, NetworkError, retryWithBackoff } from '../utils/errorUtils';
-import { Podcast, Episode, FeedUpdateResult } from '../model';
+import { NetworkError, retryWithBackoff } from '../utils/errorUtils';
+import { Podcast, Episode } from '../model';
 import { RSSParser } from './RSSParser';
 import { AtomParser } from './AtomParser';
 import { FeedCacheStore } from '../storage/CacheStore';

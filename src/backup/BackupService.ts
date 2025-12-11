@@ -7,7 +7,7 @@
  * 3. Daily auto-backup with cleanup (30 days retention)
  */
 
-import { Vault, normalizePath } from 'obsidian';
+import { Vault } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { DataPathManager } from '../storage/DataPathManager';
 import { SubscriptionStore } from '../storage/SubscriptionStore';

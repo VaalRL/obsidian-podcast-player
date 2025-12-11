@@ -5,7 +5,7 @@
  * Provides methods for tracking, updating, and querying playback progress.
  */
 
-import { Vault, normalizePath } from 'obsidian';
+import { Vault } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { StorageError } from '../utils/errorUtils';
 import { PlayProgress } from '../model';

@@ -144,7 +144,7 @@ export class PlaylistQueueView extends ItemView {
 		const sortContainer = this.pqContentEl.createDiv({ cls: 'pq-sort-container' });
 
 		// Sort by dropdown
-		const sortByLabel = sortContainer.createSpan({ text: 'Sort: ', cls: 'sort-label' });
+		sortContainer.createSpan({ text: 'Sort: ', cls: 'sort-label' });
 
 		const sortBySelect = sortContainer.createEl('select', { cls: 'sort-select' });
 
@@ -521,7 +521,7 @@ export class PlaylistQueueView extends ItemView {
 		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.handlePlayEpisode(episode);
+			void this.handlePlayEpisode(episode);
 		});
 
 		// Click to show episode details
@@ -693,7 +693,7 @@ export class PlaylistQueueView extends ItemView {
 			item
 				.setTitle('Play')
 				.setIcon('play')
-				.onClick(() => this.handlePlayEpisode(episode))
+				.onClick(() => void this.handlePlayEpisode(episode))
 		);
 
 		menu.addSeparator();

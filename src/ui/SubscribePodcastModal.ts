@@ -145,7 +145,7 @@ export class SubscribePodcastModal extends Modal {
 		searchInput.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
 				e.preventDefault();
-				this.performSearch(searchQuery);
+				void this.performSearch(searchQuery);
 			}
 		});
 
@@ -155,7 +155,7 @@ export class SubscribePodcastModal extends Modal {
 		});
 		setIcon(searchBtn, 'search');
 		searchBtn.addEventListener('click', () => {
-			this.performSearch(searchQuery);
+			void this.performSearch(searchQuery);
 		});
 
 		// Search results container
@@ -456,11 +456,11 @@ export class SubscribePodcastModal extends Modal {
 			});
 
 			errorDiv.createEl('p', {
-				text: '搜尋失敗'
+				text: 'Search failed'
 			});
 
 			errorDiv.createEl('p', {
-				text: '無法連接到 iTunes API。這可能是由於：',
+				text: 'Could not connect to iTunes API. This might be due to:',
 				cls: 'subscribe-error-detail'
 			});
 
@@ -468,12 +468,12 @@ export class SubscribePodcastModal extends Modal {
 				cls: 'subscribe-error-reasons'
 			});
 
-			reasonsList.createEl('li', { text: '網路連線問題' });
-			reasonsList.createEl('li', { text: 'Obsidian 的網路請求限制' });
-			reasonsList.createEl('li', { text: 'iTunes API 暫時無法使用' });
+			reasonsList.createEl('li', { text: 'Network connection issues' });
+			reasonsList.createEl('li', { text: 'Obsidian network request restrictions' });
+			reasonsList.createEl('li', { text: 'iTunes API being temporarily unavailable' });
 
 			errorDiv.createEl('p', {
-				text: '建議：請嘗試直接輸入 RSS Feed URL 來訂閱 Podcast',
+				text: 'Suggestion: Try entering the RSS Feed URL directly to subscribe.',
 				cls: 'subscribe-error-suggestion'
 			});
 		}
@@ -524,7 +524,7 @@ export class SubscribePodcastModal extends Modal {
 
 		// Artwork
 		if (result.artworkUrl) {
-			const artwork = item.createEl('img', {
+			item.createEl('img', {
 				cls: 'subscribe-result-artwork',
 				attr: {
 					src: result.artworkUrl,
@@ -660,7 +660,7 @@ export class SubscribePodcastModal extends Modal {
 				this.close();
 				// Trigger callback with the last successful ID (or handle differently if needed)
 				// For now, we just refresh the view via the callback if at least one succeeded
-				this.onSubmit('');
+				void this.onSubmit('');
 			}
 
 			if (failCount > 0) {
@@ -708,7 +708,7 @@ export class SubscribePodcastModal extends Modal {
 				this.close();
 
 				// Trigger the callback
-				this.onSubmit(result.podcast.id);
+				void this.onSubmit(result.podcast.id);
 			} else {
 				// Show error message
 				const errorMessage = result.error || 'Failed to subscribe to podcast';
