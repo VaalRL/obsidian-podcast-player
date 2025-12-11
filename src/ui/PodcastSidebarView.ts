@@ -60,8 +60,8 @@ export class PodcastSidebarView extends ItemView {
 		this.plugin = plugin;
 	}
 
-	async onload() {
-		await super.onload();
+	onload() {
+		super.onload();
 
 		// Listen for queue/playlist updates
 		this.registerEvent(
@@ -124,7 +124,7 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Called when the view is opened
 	 */
-	async onOpen() {
+	async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		container.empty();
 		container.addClass('podcast-sidebar-view');
@@ -139,7 +139,6 @@ export class PodcastSidebarView extends ItemView {
 	 */
 	async onClose(): Promise<void> {
 		// Cleanup if needed
-		return Promise.resolve();
 	}
 
 	/**

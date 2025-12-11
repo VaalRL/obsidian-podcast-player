@@ -32,10 +32,6 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 		// Load current settings
 		this.loadSettings();
 
-		// Header
-		new Setting(containerEl)
-			.setName('General')
-			.setHeading();
 
 		// === Data Storage ===
 		this.addStorageSection(containerEl);

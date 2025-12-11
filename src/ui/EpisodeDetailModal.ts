@@ -29,16 +29,18 @@ export class EpisodeDetailModal extends Modal {
 		this.episode = episode;
 	}
 
-	async onOpen() {
+	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('episode-detail-modal');
 		this.modalEl.addClass('episode-detail-modal-container');
 
-		// Load additional data
-		await this.loadData();
+		// Load additional data and render
+		void this.loadDataAndRender();
+	}
 
-		// Render the modal content
+	private async loadDataAndRender(): Promise<void> {
+		await this.loadData();
 		this.render();
 	}
 

@@ -41,8 +41,8 @@ export class PlayerView extends ItemView {
 
 	private lastQueueEpisodeIds: string[] = [];
 
-	async onload() {
-		await super.onload();
+	onload() {
+		super.onload();
 
 		// Listen for queue updates
 		this.registerEvent(
@@ -101,7 +101,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Called when the view is opened
 	 */
-	async onOpen() {
+	async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		container.empty();
 		container.addClass('podcast-player-view');
@@ -119,7 +119,6 @@ export class PlayerView extends ItemView {
 	 */
 	async onClose(): Promise<void> {
 		this.stopUpdateInterval();
-		return Promise.resolve();
 	}
 
 	/**

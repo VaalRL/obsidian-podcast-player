@@ -53,33 +53,7 @@ export class ConfirmModal extends Modal {
 		const messageEl = contentEl.createEl('p', { cls: 'confirm-modal-message podcast-confirm-message' });
 		messageEl.setText(this.options.message);
 
-		// Input field if required
-		let inputEl: HTMLInputElement | null = null;
-		if (this.options.requireInput) {
-			const inputContainer = contentEl.createDiv({ cls: 'confirm-modal-input podcast-confirm-input-container' });
-
-			inputContainer.createEl('p', {
-				text: `Type "${this.options.requireInput}" to confirm:`,
-				cls: 'confirm-modal-input-label'
-			});
-
-			const inputSetting = new Setting(inputContainer)
-				.addText(text => {
-					text.setPlaceholder(this.options.inputPlaceholder || this.options.requireInput || '')
-						.onChange(value => {
-							this.inputValue = value;
-							// Enable/disable confirm button based on input
-							if (confirmBtn) {
-								confirmBtn.setDisabled(value !== this.options.requireInput);
-							}
-						});
-					inputEl = text.inputEl;
-				});
-
-			inputSetting.settingEl.addClass('podcast-confirm-input-setting');
-		}
-
-		// Buttons
+		// Buttons - create first so we can reference confirmBtn in input handler
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container podcast-modal-button-container' });
 
 		new ButtonComponent(buttonContainer)
@@ -91,8 +65,7 @@ export class ConfirmModal extends Modal {
 				this.close();
 			});
 
-		let confirmBtn: ButtonComponent;
-		confirmBtn = new ButtonComponent(buttonContainer)
+		const confirmBtn = new ButtonComponent(buttonContainer)
 			.setButtonText(this.options.confirmText!);
 
 		// Set button style
@@ -114,6 +87,32 @@ export class ConfirmModal extends Modal {
 			this.onConfirm();
 			this.close();
 		});
+
+		// Input field if required - insert before button container
+		let inputEl: HTMLInputElement | null = null;
+		if (this.options.requireInput) {
+			const inputContainer = contentEl.createDiv({ cls: 'confirm-modal-input podcast-confirm-input-container' });
+			// Move input container before button container
+			contentEl.insertBefore(inputContainer, buttonContainer);
+
+			inputContainer.createEl('p', {
+				text: `Type "${this.options.requireInput}" to confirm:`,
+				cls: 'confirm-modal-input-label'
+			});
+
+			const inputSetting = new Setting(inputContainer)
+				.addText(text => {
+					text.setPlaceholder(this.options.inputPlaceholder || this.options.requireInput || '')
+						.onChange(value => {
+							this.inputValue = value;
+							// Enable/disable confirm button based on input
+							confirmBtn.setDisabled(value !== this.options.requireInput);
+						});
+					inputEl = text.inputEl;
+				});
+
+			inputSetting.settingEl.addClass('podcast-confirm-input-setting');
+		}
 
 		// Focus input if present, otherwise focus confirm button
 		setTimeout(() => {

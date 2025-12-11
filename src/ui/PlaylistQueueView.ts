@@ -60,7 +60,7 @@ export class PlaylistQueueView extends ItemView {
 	/**
 	 * Called when the view is opened
 	 */
-	async onOpen() {
+	async onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		container.empty();
 		container.addClass('playlist-queue-view');
@@ -73,7 +73,7 @@ export class PlaylistQueueView extends ItemView {
 	/**
 	 * Called when the view is closed
 	 */
-	async onClose() {
+	async onClose(): Promise<void> {
 		// Cleanup if needed
 	}
 

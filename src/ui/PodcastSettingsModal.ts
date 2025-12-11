@@ -58,7 +58,11 @@ export class PodcastSettingsModal extends Modal {
 		this.autoAddPosition = rule?.position || 'bottom';
 	}
 
-	async onOpen() {
+	onOpen() {
+		void this.renderContent();
+	}
+
+	private async renderContent(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 
@@ -130,9 +134,9 @@ export class PodcastSettingsModal extends Modal {
 			.setDesc('Automatically add new episodes to a playlist or queue')
 			.addToggle(toggle => toggle
 				.setValue(this.autoAddEnabled)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.autoAddEnabled = value;
-					this.onOpen(); // Re-render to show/hide options
+					void this.renderContent(); // Re-render to show/hide options
 				}));
 
 		if (this.autoAddEnabled) {

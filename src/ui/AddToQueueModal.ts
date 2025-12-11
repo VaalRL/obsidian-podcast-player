@@ -26,7 +26,11 @@ export class AddToQueueModal extends Modal {
 		this.onSubmit = onSubmit;
 	}
 
-	async onOpen() {
+	onOpen() {
+		void this.renderContent();
+	}
+
+	private async renderContent(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 
