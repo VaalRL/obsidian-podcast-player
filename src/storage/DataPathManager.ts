@@ -5,7 +5,7 @@
  * Handles creation and validation of data directories.
  */
 
-import { Vault, TFolder, normalizePath } from 'obsidian';
+import { Vault, normalizePath } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { StorageError } from '../utils/errorUtils';
 

@@ -6,7 +6,7 @@
  */
 
 import { logger } from '../utils/Logger';
-import { Podcast, FeedUpdateResult } from '../model';
+import { Podcast } from '../model';
 import { FeedService } from './FeedService';
 import { SubscriptionStore } from '../storage/SubscriptionStore';
 import { QueueManager } from '../queue/QueueManager';

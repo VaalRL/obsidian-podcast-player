@@ -540,9 +540,9 @@ export class PlaylistQueueView extends ItemView {
 	/**
 	 * Handle create new playlist/queue
 	 */
-	private async handleCreate(): Promise<void> {
+	private handleCreate(): void {
 		// Placeholder - will show modal for creating new playlist/queue
-		new Notice(`Create new ${this.viewMode === 'playlists' ? 'playlist' : 'queue'} - Coming soon!`);
+		new Notice(`Create new ${this.viewMode === 'playlists' ? 'playlist' : 'queue'} - coming soon!`);
 		// TODO: Show modal for name input
 	}
 
@@ -581,7 +581,7 @@ export class PlaylistQueueView extends ItemView {
 				.setTitle('Rename')
 				.setIcon('pencil')
 				.onClick(() => {
-					new Notice('Rename playlist - Coming soon!');
+					new Notice('Rename playlist - coming soon!');
 					// TODO: Show rename modal
 				})
 		);
@@ -631,7 +631,7 @@ export class PlaylistQueueView extends ItemView {
 				.setTitle('Rename')
 				.setIcon('pencil')
 				.onClick(() => {
-					new Notice('Rename queue - Coming soon!');
+					new Notice('Rename queue - coming soon!');
 					// TODO: Show rename modal
 				})
 		);

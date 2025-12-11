@@ -17,17 +17,6 @@ import { QueueStore } from '../queue/QueueStore';
 import { Podcast, Playlist, Queue, PlayProgress, PluginSettings } from '../model';
 
 /**
- * OPML document structure
- */
-interface OPMLOutline {
-	text: string;
-	title?: string;
-	type?: string;
-	xmlUrl?: string;
-	htmlUrl?: string;
-}
-
-/**
  * Full backup data structure
  */
 export interface FullBackupData {

@@ -117,7 +117,9 @@ export class PlayerView extends ItemView {
 
 	/**
 	 * Called when the view is closed
+	 * Note: async is required to match ItemView.onClose() signature even without await
 	 */
+	// eslint-disable-next-line @typescript-eslint/require-await
 	async onClose(): Promise<void> {
 		this.stopUpdateInterval();
 	}
@@ -218,7 +220,7 @@ export class PlayerView extends ItemView {
 		// Play/Pause button
 		const playPauseBtn = controlsSection.createEl('button', {
 			cls: 'player-button player-button-play-pause clickable-icon',
-			attr: { 'aria-label': 'Play/Pause' }
+			attr: { 'aria-label': 'Play/pause' }
 		});
 		setIcon(playPauseBtn, 'play');
 		playPauseBtn.addEventListener('click', () => void this.handlePlayPause());

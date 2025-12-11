@@ -76,7 +76,7 @@ export class AddToQueueModal extends Modal {
 			.setName('New queue name')
 			.setDesc('Enter a name for the new queue')
 			.addText(text => text
-				.setPlaceholder('My Queue')
+				.setPlaceholder('My queue')
 				.onChange(value => {
 					newQueueName = value;
 				}));

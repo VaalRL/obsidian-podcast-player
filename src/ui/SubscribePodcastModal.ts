@@ -203,7 +203,7 @@ export class SubscribePodcastModal extends Modal {
 		});
 
 		new Setting(urlSection)
-			.setName('Feed URL')
+			.setName('Feed url')
 			.setDesc('Example: https://example.com/podcast/feed.xml')
 			.addText(text => {
 				text
@@ -252,7 +252,7 @@ export class SubscribePodcastModal extends Modal {
 		});
 
 		const selectFileBtn = fileInputContainer.createEl('button', {
-			text: 'Select OPML file',
+			text: 'Select file',
 			cls: 'subscribe-file-select-button clickable-icon'
 		});
 		setIcon(selectFileBtn, 'file-up');
@@ -317,7 +317,7 @@ export class SubscribePodcastModal extends Modal {
 			this.selectedOpmlFeeds.clear();
 
 			outlines.forEach((outline) => {
-				const text = outline.getAttribute('text') || 'Unknown Podcast';
+				const text = outline.getAttribute('text') || 'Unknown podcast';
 				const xmlUrl = outline.getAttribute('xmlUrl');
 				if (xmlUrl) {
 					this.opmlFeeds.push({ text, xmlUrl });
@@ -457,7 +457,7 @@ export class SubscribePodcastModal extends Modal {
 			});
 
 			errorDiv.createEl('p', {
-				text: 'Search failed'
+				text: 'Search failed.'
 			});
 
 			errorDiv.createEl('p', {
@@ -474,7 +474,7 @@ export class SubscribePodcastModal extends Modal {
 			reasonsList.createEl('li', { text: 'iTunes API being temporarily unavailable' });
 
 			errorDiv.createEl('p', {
-				text: 'Suggestion: Try entering the RSS Feed URL directly to subscribe.',
+				text: 'Suggestion: try entering the RSS feed URL directly to subscribe.',
 				cls: 'subscribe-error-suggestion'
 			});
 		}

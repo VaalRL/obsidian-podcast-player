@@ -9,7 +9,7 @@
 
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { Playlist, Episode } from '../model';
+import { Episode } from '../model';
 import { logger } from '../utils/Logger';
 
 /**
@@ -80,7 +80,7 @@ export class AddToPlaylistModal extends Modal {
 			.setName('Playlist name')
 			.setDesc('Enter a name for the new playlist')
 			.addText(text => text
-				.setPlaceholder('My Playlist')
+				.setPlaceholder('My playlist')
 				.onChange(value => {
 					newPlaylistName = value;
 				}));

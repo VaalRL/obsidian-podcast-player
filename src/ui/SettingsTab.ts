@@ -179,7 +179,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Daily note folder')
 			.setDesc('Folder where your daily notes are stored (leave empty for vault root)')
 			.addText(text => text
-				.setPlaceholder('e.g., Daily Notes')
+				.setPlaceholder('e.g., Daily notes')
 				.setValue(this.settings.dailyNoteFolderPath)
 				.onChange((value) => {
 					this.settings.dailyNoteFolderPath = value;
@@ -306,7 +306,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Export OPML')
 			.setDesc('Export your podcast subscriptions to OPML format (compatible with other podcast apps)')
 			.addButton(button => button
-				.setButtonText('Export OPML')
+				.setButtonText('Export')
 				.onClick(() => {
 					void this.exportOPML();
 				}));
@@ -316,7 +316,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Import OPML')
 			.setDesc('Import podcast subscriptions from an OPML file')
 			.addButton(button => button
-				.setButtonText('Import OPML')
+				.setButtonText('Import')
 				.onClick(() => {
 					void this.importOPML();
 				}));
@@ -344,7 +344,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// Auto backup info
 		containerEl.createEl('p', {
-			text: 'Auto-backup: Daily backups are automatically created and kept for 30 days.',
+			text: 'Auto-backup: daily backups are automatically created and kept for 30 days.',
 			cls: 'setting-item-description'
 		});
 	}

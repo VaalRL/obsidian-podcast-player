@@ -74,7 +74,6 @@ export class iTunesSearchService {
 
 		const {
 			limit = iTunesSearchService.DEFAULT_LIMIT,
-			timeout = iTunesSearchService.DEFAULT_TIMEOUT,
 			country = 'US',
 			includeExplicit = true,
 		} = options;

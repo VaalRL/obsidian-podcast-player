@@ -214,13 +214,19 @@ export class NoteExporter {
 		const lines = ['---'];
 		for (const [key, value] of Object.entries(frontMatter)) {
 			if (value !== undefined && value !== null) {
-				if (typeof value === 'string' && value.includes(':')) {
-					lines.push(`${key}: "${value}"`);
+				if (typeof value === 'string') {
+					// Quote strings that contain colons
+					if (value.includes(':')) {
+						lines.push(`${key}: "${value}"`);
+					} else {
+						lines.push(`${key}: ${value}`);
+					}
+				} else if (typeof value === 'number' || typeof value === 'boolean') {
+					lines.push(`${key}: ${value}`);
 				} else if (typeof value === 'object') {
 					lines.push(`${key}: ${JSON.stringify(value)}`);
-				} else {
-					lines.push(`${key}: ${String(value)}`);
 				}
+				// Skip other types that would result in [object Object]
 			}
 		}
 		lines.push('---\n');

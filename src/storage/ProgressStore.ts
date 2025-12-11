@@ -180,8 +180,6 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 	): Promise<void> {
 		logger.methodEntry('ProgressStore', 'updatePosition', episodeId);
 
-		const existingProgress = await this.getProgress(episodeId);
-
 		const progress: PlayProgress = {
 			episodeId,
 			podcastId,
