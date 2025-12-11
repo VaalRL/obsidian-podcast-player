@@ -364,19 +364,21 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.addButton(button => button
 				.setButtonText('Reset')
 				.setWarning()
-				.onClick(async () => {
-					const confirmed = await showConfirmModal(this.app, {
-						title: 'Reset Settings',
-						message: 'Are you sure you want to reset all settings to their default values?\n\nThis cannot be undone.',
-						confirmText: 'Reset',
-						confirmClass: 'warning'
-					});
+				.onClick(() => {
+					void (async () => {
+						const confirmed = await showConfirmModal(this.app, {
+							title: 'Reset settings',
+							message: 'Are you sure you want to reset all settings to their default values?\n\nThis cannot be undone.',
+							confirmText: 'Reset',
+							confirmClass: 'warning'
+						});
 
-					if (confirmed) {
-						await this.plugin.resetSettings();
-						this.display();
-						new Notice('Settings reset to defaults');
-					}
+						if (confirmed) {
+							await this.plugin.resetSettings();
+							this.display();
+							new Notice('Settings reset to defaults');
+						}
+					})();
 				}));
 
 		// Delete all data
@@ -386,8 +388,8 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.addButton(button => button
 				.setButtonText('Delete all')
 				.setWarning()
-				.onClick(async () => {
-					await this.deleteAllData();
+				.onClick(() => {
+					void this.deleteAllData();
 				}));
 	}
 

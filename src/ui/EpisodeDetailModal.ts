@@ -101,7 +101,7 @@ export class EpisodeDetailModal extends Modal {
 		if (this.episode.imageUrl || this.podcast?.imageUrl) {
 			const imageUrl = this.episode.imageUrl || this.podcast?.imageUrl || '';
 			if (imageUrl) {
-				const img = header.createEl('img', {
+				header.createEl('img', {
 					cls: 'episode-detail-image',
 					attr: { src: imageUrl, alt: this.episode.title }
 				});
@@ -205,7 +205,7 @@ export class EpisodeDetailModal extends Modal {
 		progressFill.setCssProps({ width: `${percentage}%` });
 
 		// Completion percentage
-		const percentageText = progressBarContainer.createSpan({
+		progressBarContainer.createSpan({
 			text: `${Math.round(percentage)}%`,
 			cls: 'episode-detail-progress-text'
 		});

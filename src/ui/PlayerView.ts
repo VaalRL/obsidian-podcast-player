@@ -159,7 +159,7 @@ export class PlayerView extends ItemView {
 		// Title container with info button
 		const titleContainer = infoSection.createDiv({ cls: 'episode-title-container' });
 
-		const title = titleContainer.createEl('h3', {
+		titleContainer.createEl('h3', {
 			text: 'No episode playing',
 			cls: 'episode-title'
 		});
@@ -312,7 +312,7 @@ export class PlayerView extends ItemView {
 				}
 			};
 
-			const onMouseUp = async () => {
+			const onMouseUp = () => {
 				this.isDraggingProgress = false;
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
@@ -456,14 +456,14 @@ export class PlayerView extends ItemView {
 
 
 			if (state.status === 'playing') {
-				playerController.pause();
+				void playerController.pause();
 			} else if (state.status === 'paused') {
-				playerController.play();
+				void playerController.play();
 			} else if (state.status === 'stopped' && !state.currentEpisode) {
 				// No episode loaded - try to play from first queue's first episode
 				await this.playFromFirstQueue();
 			} else if (state.status === 'stopped') {
-				playerController.play();
+				void playerController.play();
 			}
 		} catch (error) {
 			logger.error('Failed to toggle playback', error);
@@ -630,7 +630,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle skip backward button click (15 seconds)
 	 */
-	private async handleSkipBackward(): Promise<void> {
+	private handleSkipBackward(): void {
 		try {
 			const playerController = this.plugin.playerController;
 			playerController.skipBackward(15);
@@ -642,7 +642,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle skip forward button click (30 seconds)
 	 */
-	private async handleSkipForward(): Promise<void> {
+	private handleSkipForward(): void {
 		try {
 			const playerController = this.plugin.playerController;
 			playerController.skipForward(30);
@@ -654,7 +654,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle seek bar click
 	 */
-	private async handleSeek(event: MouseEvent, progressBar: HTMLElement): Promise<void> {
+	private handleSeek(event: MouseEvent, progressBar: HTMLElement): void {
 		try {
 			const playerController = this.plugin.playerController;
 			const state = playerController.getState();
@@ -681,7 +681,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle volume change
 	 */
-	private async handleVolumeChange(volume: number): Promise<void> {
+	private handleVolumeChange(volume: number): void {
 		try {
 			const playerController = this.plugin.playerController;
 			// Convert percentage (0-100) to decimal (0-1)
@@ -694,7 +694,7 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle speed change (cycle through speeds)
 	 */
-	private async handleSpeedChange(speed: number): Promise<void> {
+	private handleSpeedChange(speed: number): void {
 		try {
 			const playerController = this.plugin.playerController;
 			playerController.setPlaybackSpeed(speed);
@@ -1085,15 +1085,17 @@ export class PlayerView extends ItemView {
 		}
 
 		// Click to play this episode
-		item.addEventListener('click', async () => {
-			const playerController = this.plugin.playerController;
-			const playlist = playerController.getCurrentPlaylist();
+		item.addEventListener('click', () => {
+			void (async () => {
+				const playerController = this.plugin.playerController;
+				const playlist = playerController.getCurrentPlaylist();
 
-			if (playlist) {
-				// Update the playlist index and load the episode
-				playerController.setCurrentPlaylist(playlist, index);
-				await playerController.loadEpisode(episode, true, true);
-			}
+				if (playlist) {
+					// Update the playlist index and load the episode
+					playerController.setCurrentPlaylist(playlist, index);
+					await playerController.loadEpisode(episode, true, true);
+				}
+			})();
 		});
 	}
 
@@ -1239,21 +1241,24 @@ export class PlayerView extends ItemView {
 			item.removeClass('drag-over');
 		});
 
-		item.addEventListener('drop', async (e) => {
+		item.addEventListener('drop', (e) => {
 			e.preventDefault();
 			item.removeClass('drag-over');
 
 			const fromIndex = parseInt(e.dataTransfer?.getData('text/plain') || '-1');
-			if (fromIndex !== -1 && fromIndex !== index && this.currentQueueId) {
-				try {
-					const queueManager = this.plugin.getQueueManager();
-					await queueManager.moveEpisode(this.currentQueueId, fromIndex, index);
+			const queueId = this.currentQueueId;
+			if (fromIndex !== -1 && fromIndex !== index && queueId) {
+				void (async () => {
+					try {
+						const queueManager = this.plugin.getQueueManager();
+						await queueManager.moveEpisode(queueId, fromIndex, index);
 
-					// Force refresh immediately to show new order
-					await this.renderPlayer();
-				} catch (error) {
-					logger.error('Failed to move episode', error);
-				}
+						// Force refresh immediately to show new order
+						await this.renderPlayer();
+					} catch (error) {
+						logger.error('Failed to move episode', error);
+					}
+				})();
 			}
 		});
 

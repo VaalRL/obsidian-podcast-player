@@ -592,16 +592,18 @@ export class PlaylistQueueView extends ItemView {
 			item
 				.setTitle('Delete')
 				.setIcon('trash')
-				.onClick(async () => {
-					try {
-						const playlistManager = this.plugin.getPlaylistManager();
-						await playlistManager.deletePlaylist(playlist.id);
-						new Notice('Playlist deleted');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to delete playlist', error);
-						new Notice('Failed to delete playlist');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const playlistManager = this.plugin.getPlaylistManager();
+							await playlistManager.deletePlaylist(playlist.id);
+							new Notice('Playlist deleted');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to delete playlist', error);
+							new Notice('Failed to delete playlist');
+						}
+					})();
 				})
 		);
 
@@ -640,16 +642,18 @@ export class PlaylistQueueView extends ItemView {
 			item
 				.setTitle('Clear')
 				.setIcon('eraser')
-				.onClick(async () => {
-					try {
-						const queueManager = this.plugin.getQueueManager();
-						await queueManager.clearQueue(queue.id);
-						new Notice('Queue cleared');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to clear queue', error);
-						new Notice('Failed to clear queue');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.clearQueue(queue.id);
+							new Notice('Queue cleared');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to clear queue', error);
+							new Notice('Failed to clear queue');
+						}
+					})();
 				})
 		);
 
@@ -657,16 +661,18 @@ export class PlaylistQueueView extends ItemView {
 			item
 				.setTitle('Delete')
 				.setIcon('trash')
-				.onClick(async () => {
-					try {
-						const queueManager = this.plugin.getQueueManager();
-						await queueManager.deleteQueue(queue.id);
-						new Notice('Queue deleted');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to delete queue', error);
-						new Notice('Failed to delete queue');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.deleteQueue(queue.id);
+							new Notice('Queue deleted');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to delete queue', error);
+							new Notice('Failed to delete queue');
+						}
+					})();
 				})
 		);
 
@@ -703,24 +709,26 @@ export class PlaylistQueueView extends ItemView {
 			item
 				.setTitle('Remove from ' + type)
 				.setIcon('trash')
-				.onClick(async () => {
-					try {
-						if (type === 'playlist' && this.selectedPlaylist) {
-							const playlistManager = this.plugin.getPlaylistManager();
-							await playlistManager.removeEpisode(this.selectedPlaylist.id, episode.id);
-							this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
-							new Notice('Episode removed from playlist');
-						} else if (type === 'queue' && this.selectedQueue) {
-							const queueManager = this.plugin.getQueueManager();
-							await queueManager.removeEpisode(this.selectedQueue.id, episode.id);
-							this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
-							new Notice('Episode removed from queue');
+				.onClick(() => {
+					void (async () => {
+						try {
+							if (type === 'playlist' && this.selectedPlaylist) {
+								const playlistManager = this.plugin.getPlaylistManager();
+								await playlistManager.removeEpisode(this.selectedPlaylist.id, episode.id);
+								this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
+								new Notice('Episode removed from playlist');
+							} else if (type === 'queue' && this.selectedQueue) {
+								const queueManager = this.plugin.getQueueManager();
+								await queueManager.removeEpisode(this.selectedQueue.id, episode.id);
+								this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
+								new Notice('Episode removed from queue');
+							}
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to remove episode', error);
+							new Notice('Failed to remove episode');
 						}
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to remove episode', error);
-						new Notice('Failed to remove episode');
-					}
+					})();
 				})
 		);
 

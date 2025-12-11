@@ -611,7 +611,7 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.handlePlayEpisode(episode);
+			void this.handlePlayEpisode(episode);
 		});
 
 		// Add to button
@@ -622,7 +622,7 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(addBtn, 'plus');
 		addBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.showAddToPlaylistMenu(episode, e);
+			void this.showAddToPlaylistMenu(episode, e);
 		});
 
 		// Click to show details
@@ -778,7 +778,7 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.handlePlayEpisode(episode, true);
+			void this.handlePlayEpisode(episode, true);
 		});
 
 		// Add button
@@ -789,7 +789,7 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(addBtn, 'plus');
 		addBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.showAddToPlaylistMenu(episode, e);
+			void this.showAddToPlaylistMenu(episode, e);
 		});
 
 		// Click to show episode details
@@ -890,14 +890,16 @@ export class PodcastSidebarView extends ItemView {
 				item
 					.setTitle(queue.name)
 					.setIcon('list-ordered')
-					.onClick(async () => {
-						try {
-							await queueManager.addEpisode(queue.id, episode.id);
-							new Notice(`Added to queue: ${queue.name}`);
-						} catch (e) {
-							logger.error('Operation failed', e);
-							new Notice('Failed to add to queue');
-						}
+					.onClick(() => {
+						void (async () => {
+							try {
+								await queueManager.addEpisode(queue.id, episode.id);
+								new Notice(`Added to queue: ${queue.name}`);
+							} catch (e) {
+								logger.error('Operation failed', e);
+								new Notice('Failed to add to queue');
+							}
+						})();
 					})
 			);
 		});
@@ -905,16 +907,18 @@ export class PodcastSidebarView extends ItemView {
 		// New Queue Option
 		menu.addItem((item) =>
 			item
-				.setTitle('New Queue...')
+				.setTitle('New queue...')
 				.setIcon('plus')
-				.onClick(async () => {
-					const name = await this.promptForInput('New Queue', 'Enter queue name:');
-					if (name) {
-						const newQueue = await queueManager.createQueue(name);
-						await queueManager.addEpisode(newQueue.id, episode.id);
-						new Notice(`Created queue "${name}" and added episode`);
-						await this.render();
-					}
+				.onClick(() => {
+					void (async () => {
+						const name = await this.promptForInput('New Queue', 'Enter queue name:');
+						if (name) {
+							const newQueue = await queueManager.createQueue(name);
+							await queueManager.addEpisode(newQueue.id, episode.id);
+							new Notice(`Created queue "${name}" and added episode`);
+							await this.render();
+						}
+					})();
 				})
 		);
 
@@ -929,14 +933,16 @@ export class PodcastSidebarView extends ItemView {
 				item
 					.setTitle(playlist.name)
 					.setIcon('list')
-					.onClick(async () => {
-						try {
-							await playlistManager.addEpisode(playlist.id, episode.id);
-							new Notice(`Added to playlist: ${playlist.name}`);
-						} catch (e) {
-							logger.error('Operation failed', e);
-							new Notice('Failed to add to playlist');
-						}
+					.onClick(() => {
+						void (async () => {
+							try {
+								await playlistManager.addEpisode(playlist.id, episode.id);
+								new Notice(`Added to playlist: ${playlist.name}`);
+							} catch (e) {
+								logger.error('Operation failed', e);
+								new Notice('Failed to add to playlist');
+							}
+						})();
 					})
 			);
 		});
@@ -944,16 +950,18 @@ export class PodcastSidebarView extends ItemView {
 		// New Playlist Option
 		menu.addItem((item) =>
 			item
-				.setTitle('New Playlist...')
+				.setTitle('New playlist...')
 				.setIcon('plus')
-				.onClick(async () => {
-					const name = await this.promptForInput('New Playlist', 'Enter playlist name:');
-					if (name) {
-						const newPlaylist = await playlistManager.createPlaylist(name);
-						await playlistManager.addEpisode(newPlaylist.id, episode.id);
-						new Notice(`Created playlist "${name}" and added episode`);
-						await this.render();
-					}
+				.onClick(() => {
+					void (async () => {
+						const name = await this.promptForInput('New Playlist', 'Enter playlist name:');
+						if (name) {
+							const newPlaylist = await playlistManager.createPlaylist(name);
+							await playlistManager.addEpisode(newPlaylist.id, episode.id);
+							new Notice(`Created playlist "${name}" and added episode`);
+							await this.render();
+						}
+					})();
 				})
 		);
 
@@ -1082,7 +1090,7 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Episodes')
+				.setTitle('View episodes')
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedPodcast = podcast;
@@ -1092,19 +1100,21 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('Refresh Feed')
+				.setTitle('Refresh feed')
 				.setIcon('refresh-cw')
-				.onClick(async () => {
-					try {
-						const feedSyncManager = this.plugin.getFeedSyncManager();
-						new Notice('Refreshing feed...');
-						await feedSyncManager.syncPodcast(podcast.id);
-						new Notice('Feed refreshed');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to refresh feed', error);
-						new Notice('Failed to refresh feed');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const feedSyncManager = this.plugin.getFeedSyncManager();
+							new Notice('Refreshing feed...');
+							await feedSyncManager.syncPodcast(podcast.id);
+							new Notice('Feed refreshed');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to refresh feed', error);
+							new Notice('Failed to refresh feed');
+						}
+					})();
 				})
 		);
 
@@ -1114,16 +1124,18 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Unsubscribe')
 				.setIcon('trash')
-				.onClick(async () => {
-					try {
-						const podcastService = this.plugin.getPodcastService();
-						await podcastService.unsubscribe(podcast.id);
-						new Notice(`Unsubscribed from ${podcast.title}`);
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to unsubscribe', error);
-						new Notice('Failed to unsubscribe');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const podcastService = this.plugin.getPodcastService();
+							await podcastService.unsubscribe(podcast.id);
+							new Notice(`Unsubscribed from ${podcast.title}`);
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to unsubscribe', error);
+							new Notice('Failed to unsubscribe');
+						}
+					})();
 				})
 		);
 
@@ -1138,7 +1150,7 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('info')
 				.onClick(() => this.handleEpisodeClick(episode))
 		);
@@ -1149,7 +1161,7 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Play')
 				.setIcon('play')
-				.onClick(() => this.handlePlayEpisode(episode))
+				.onClick(() => void this.handlePlayEpisode(episode))
 		);
 
 		menu.addItem((item) =>
@@ -1568,7 +1580,7 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('list')
 				.onClick(() => {
 					void this.showQueueDetails(queue);
@@ -1579,8 +1591,8 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Play')
 				.setIcon('play')
-				.onClick(async () => {
-					await this.handlePlayQueue(queue);
+				.onClick(() => {
+					void this.handlePlayQueue(queue);
 				})
 		);
 
@@ -1588,19 +1600,21 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Rename')
 				.setIcon('pencil')
-				.onClick(async () => {
-					const newName = await this.promptForInput('Rename Queue', 'Enter new name:', queue.name);
-					if (!newName || newName === queue.name) return;
+				.onClick(() => {
+					void (async () => {
+						const newName = await this.promptForInput('Rename Queue', 'Enter new name:', queue.name);
+						if (!newName || newName === queue.name) return;
 
-					try {
-						const queueManager = this.plugin.getQueueManager();
-						await queueManager.updateQueue(queue.id, { name: newName });
-						new Notice('Queue renamed');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to rename queue', error);
-						new Notice('Failed to rename queue');
-					}
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.updateQueue(queue.id, { name: newName });
+							new Notice('Queue renamed');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to rename queue', error);
+							new Notice('Failed to rename queue');
+						}
+					})();
 				})
 		);
 
@@ -1608,37 +1622,41 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('Clear Queue')
+				.setTitle('Clear queue')
 				.setIcon('eraser')
-				.onClick(async () => {
-					try {
-						const queueManager = this.plugin.getQueueManager();
-						await queueManager.clearQueue(queue.id);
-						new Notice('Queue cleared');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to clear queue', error);
-						new Notice('Failed to clear queue');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.clearQueue(queue.id);
+							new Notice('Queue cleared');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to clear queue', error);
+							new Notice('Failed to clear queue');
+						}
+					})();
 				})
 		);
 
 		menu.addItem((item) =>
 			item
-				.setTitle('Delete Queue')
+				.setTitle('Delete queue')
 				.setIcon('trash')
-				.onClick(async () => {
-					// Confirm deletion
-					// For now just delete
-					try {
-						const queueManager = this.plugin.getQueueManager();
-						await queueManager.deleteQueue(queue.id);
-						new Notice('Queue deleted');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to delete queue', error);
-						new Notice('Failed to delete queue');
-					}
+				.onClick(() => {
+					void (async () => {
+						// Confirm deletion
+						// For now just delete
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.deleteQueue(queue.id);
+							new Notice('Queue deleted');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to delete queue', error);
+							new Notice('Failed to delete queue');
+						}
+					})();
 				})
 		);
 
@@ -1876,7 +1894,7 @@ export class PodcastSidebarView extends ItemView {
 					}
 				} else {
 					// Other episodes - play the episode
-					this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
+					void this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
 				}
 			} catch (error) {
 				logger.error('Failed to play/pause episode', error);
@@ -1988,7 +2006,7 @@ export class PodcastSidebarView extends ItemView {
 						await queueManager.jumpTo(this.selectedQueue.id, index);
 						await this.plugin.playerController.loadEpisode(episode, true);
 					} else {
-						this.handlePlayEpisode(episode);
+						void this.handlePlayEpisode(episode);
 					}
 				}
 			} catch (error) {
@@ -2108,7 +2126,7 @@ export class PodcastSidebarView extends ItemView {
 			const description = await this.promptForInput('Playlist Description', 'Enter description (optional):');
 
 			const playlistManager = this.plugin.getPlaylistManager();
-			const playlist = await playlistManager.createPlaylist(name, description || undefined);
+			await playlistManager.createPlaylist(name, description || undefined);
 
 			new Notice(`Playlist "${name}" created`);
 
@@ -2300,7 +2318,7 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedPlaylist = playlist;
@@ -2312,19 +2330,21 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Rename')
 				.setIcon('pencil')
-				.onClick(async () => {
-					const newName = await this.promptForInput('Rename Playlist', 'Enter new name:', playlist.name);
-					if (!newName || newName === playlist.name) return;
+				.onClick(() => {
+					void (async () => {
+						const newName = await this.promptForInput('Rename Playlist', 'Enter new name:', playlist.name);
+						if (!newName || newName === playlist.name) return;
 
-					try {
-						const playlistManager = this.plugin.getPlaylistManager();
-						await playlistManager.updatePlaylist(playlist.id, { name: newName });
-						new Notice('Playlist renamed');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to rename playlist', error);
-						new Notice('Failed to rename playlist');
-					}
+						try {
+							const playlistManager = this.plugin.getPlaylistManager();
+							await playlistManager.updatePlaylist(playlist.id, { name: newName });
+							new Notice('Playlist renamed');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to rename playlist', error);
+							new Notice('Failed to rename playlist');
+						}
+					})();
 				})
 		);
 
@@ -2334,16 +2354,18 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Delete')
 				.setIcon('trash')
-				.onClick(async () => {
-					try {
-						const playlistManager = this.plugin.getPlaylistManager();
-						await playlistManager.deletePlaylist(playlist.id);
-						new Notice('Playlist deleted');
-						await this.render();
-					} catch (error) {
-						logger.error('Failed to delete playlist', error);
-						new Notice('Failed to delete playlist');
-					}
+				.onClick(() => {
+					void (async () => {
+						try {
+							const playlistManager = this.plugin.getPlaylistManager();
+							await playlistManager.deletePlaylist(playlist.id);
+							new Notice('Playlist deleted');
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to delete playlist', error);
+							new Notice('Failed to delete playlist');
+						}
+					})();
 				})
 		);
 
@@ -2358,7 +2380,7 @@ export class PodcastSidebarView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('info')
 				.onClick(() => this.handleEpisodeClick(episode))
 		);
@@ -2369,28 +2391,30 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Play')
 				.setIcon('play')
-				.onClick(() => this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined))
+				.onClick(() => void this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined))
 		);
 
 		menu.addSeparator();
 
 		menu.addItem((item) =>
 			item
-				.setTitle('Remove from Playlist')
+				.setTitle('Remove from playlist')
 				.setIcon('trash')
-				.onClick(async () => {
-					try {
-						if (this.selectedPlaylist) {
-							const playlistManager = this.plugin.getPlaylistManager();
-							await playlistManager.removeEpisode(this.selectedPlaylist.id, episode.id);
-							this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
-							new Notice('Episode removed from playlist');
-							await this.render();
+				.onClick(() => {
+					void (async () => {
+						try {
+							if (this.selectedPlaylist) {
+								const playlistManager = this.plugin.getPlaylistManager();
+								await playlistManager.removeEpisode(this.selectedPlaylist.id, episode.id);
+								this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
+								new Notice('Episode removed from playlist');
+								await this.render();
+							}
+						} catch (error) {
+							logger.error('Failed to remove episode', error);
+							new Notice('Failed to remove episode');
 						}
-					} catch (error) {
-						logger.error('Failed to remove episode', error);
-						new Notice('Failed to remove episode');
-					}
+					})();
 				})
 		);
 

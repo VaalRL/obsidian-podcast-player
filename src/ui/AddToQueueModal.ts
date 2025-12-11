@@ -9,7 +9,7 @@
 
 import { App, Modal, Setting, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { Queue, Episode } from '../model';
+import { Episode } from '../model';
 import { logger } from '../utils/Logger';
 
 /**

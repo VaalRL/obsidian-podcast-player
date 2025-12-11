@@ -216,6 +216,8 @@ export class NoteExporter {
 			if (value !== undefined && value !== null) {
 				if (typeof value === 'string' && value.includes(':')) {
 					lines.push(`${key}: "${value}"`);
+				} else if (typeof value === 'object') {
+					lines.push(`${key}: ${JSON.stringify(value)}`);
 				} else {
 					lines.push(`${key}: ${String(value)}`);
 				}

@@ -518,7 +518,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Reveal the leaf
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 		}
 
 		logger.methodExit('PodcastPlayerPlugin', 'activatePlayerView');
@@ -552,7 +552,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Reveal the leaf
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 		}
 
 		logger.methodExit('PodcastPlayerPlugin', 'activateSidebarView');
@@ -642,7 +642,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Reveal the leaf
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 		}
 
 		logger.methodExit('PodcastPlayerPlugin', 'activatePlaylistQueueView');
