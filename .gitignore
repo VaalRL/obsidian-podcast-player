@@ -40,3 +40,6 @@ gemini/
 CLAUDE.md
 gemini.md
 agents.md
+
+# Root Markdown Files
+/*.md

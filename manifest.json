@@ -1,7 +1,7 @@
 {
 	"id": "podcast-player",
 	"name": "Podcast",
-	"version": "0.1.1",
+	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "A feature-rich podcast player and manager. Subscribe to podcasts, play episodes, manage playlists and queues, and seamlessly integrate with your notes.",
 	"author": "VaalRL",
