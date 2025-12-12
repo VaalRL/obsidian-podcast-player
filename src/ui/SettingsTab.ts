@@ -179,7 +179,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Daily note folder')
 			.setDesc('Folder where your daily notes are stored (leave empty for vault root)')
 			.addText(text => text
-				.setPlaceholder('e.g., Daily notes')
+				.setPlaceholder('e.g., daily notes')
 				.setValue(this.settings.dailyNoteFolderPath)
 				.onChange((value) => {
 					this.settings.dailyNoteFolderPath = value;
@@ -303,7 +303,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// OPML Export
 		new Setting(containerEl)
-			.setName('Export OPML')
+			.setName('Export to OPML')
 			.setDesc('Export your podcast subscriptions to OPML format (compatible with other podcast apps)')
 			.addButton(button => button
 				.setButtonText('Export')
@@ -313,7 +313,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// OPML Import
 		new Setting(containerEl)
-			.setName('Import OPML')
+			.setName('Import from OPML')
 			.setDesc('Import podcast subscriptions from an OPML file')
 			.addButton(button => button
 				.setButtonText('Import')
@@ -475,7 +475,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				new Notice('Settings imported successfully');
 			} catch (error) {
 				logger.error('Failed to import settings', error);
-				new Notice('Failed to import settings: Invalid file format');
+				new Notice('Failed to import settings: invalid file format');
 			}
 		};
 
@@ -499,10 +499,10 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			a.click();
 
 			URL.revokeObjectURL(url);
-			new Notice('OPML exported successfully');
+			new Notice('Subscriptions exported to OPML');
 		} catch (error) {
 			logger.error('Failed to export OPML', error);
-			new Notice('Failed to export OPML');
+			new Notice('Failed to export subscriptions');
 		}
 	}
 
@@ -528,7 +528,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				const feedUrls = backupService.parseOPML(text);
 
 				if (feedUrls.length === 0) {
-					new Notice('No podcast feeds found in OPML file');
+					new Notice('No podcast feeds found in file');
 					return;
 				}
 
@@ -555,7 +555,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				new Notice(`Imported ${successCount} podcasts (${failCount} failed)`);
 			} catch (error) {
 				logger.error('Failed to import OPML', error);
-				new Notice('Failed to import OPML: Invalid file format');
+				new Notice('Failed to import subscriptions: invalid file format');
 			}
 		};
 
@@ -635,7 +635,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 			} catch (error) {
 				logger.error('Failed to import backup', error);
-				new Notice('Failed to import backup: Invalid file format');
+				new Notice('Failed to import backup: invalid file format');
 			}
 		};
 

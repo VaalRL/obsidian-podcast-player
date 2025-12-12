@@ -156,11 +156,11 @@ export class PodcastSettingsModal extends Modal {
 				dropdown.addOption('', 'Select a target...');
 
 				if (queues.length > 0) {
-					queues.forEach(q => dropdown.addOption(`queue:${q.id}`, `Queue: ${q.name}`));
+					queues.forEach(q => dropdown.addOption(`queue:${q.id}`, `queue: ${q.name}`));
 				}
 
 				if (playlists.length > 0) {
-					playlists.forEach(p => dropdown.addOption(`playlist:${p.id}`, `Playlist: ${p.name}`));
+					playlists.forEach(p => dropdown.addOption(`playlist:${p.id}`, `playlist: ${p.name}`));
 				}
 
 				// Set initial value

@@ -471,7 +471,7 @@ export class SubscribePodcastModal extends Modal {
 
 			reasonsList.createEl('li', { text: 'network connection issues' });
 			reasonsList.createEl('li', { text: 'Obsidian network request restrictions' });
-			reasonsList.createEl('li', { text: 'iTunes API being temporarily unavailable' });
+			reasonsList.createEl('li', { text: 'iTunes API temporarily unavailable' });
 
 			errorDiv.createEl('p', {
 				text: 'Suggestion: try entering the RSS feed URL directly to subscribe.',
