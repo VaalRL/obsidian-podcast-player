@@ -198,7 +198,7 @@ export class SubscribePodcastModal extends Modal {
 		const urlSection = container.createDiv({ cls: 'subscribe-url-section' });
 
 		urlSection.createEl('p', {
-			text: 'Enter the RSS or Atom feed URL of the podcast you want to subscribe to.',
+			text: 'Enter the RSS or Atom feed URL of the podcast you want to subscribe to',
 			cls: 'subscribe-url-desc'
 		});
 
@@ -238,7 +238,7 @@ export class SubscribePodcastModal extends Modal {
 		const fileSection = container.createDiv({ cls: 'subscribe-file-section' });
 
 		fileSection.createEl('p', {
-			text: 'Import podcasts from an OPML file exported from another podcast app.',
+			text: 'Import podcasts from an OPML file exported from another podcast app',
 			cls: 'subscribe-file-desc'
 		});
 
@@ -327,7 +327,7 @@ export class SubscribePodcastModal extends Modal {
 			});
 
 			if (this.opmlFeeds.length === 0) {
-				new Notice('No podcast feeds found in the OPML file');
+				new Notice('No podcast feeds found in file');
 				return;
 			}
 
@@ -338,7 +338,7 @@ export class SubscribePodcastModal extends Modal {
 
 		} catch (error) {
 			logger.error('Failed to parse OPML file', error);
-			new Notice('Failed to read the OPML file');
+			new Notice('Failed to read file');
 		}
 	}
 
@@ -461,7 +461,7 @@ export class SubscribePodcastModal extends Modal {
 			});
 
 			errorDiv.createEl('p', {
-				text: 'Could not connect to iTunes API. This might be due to:',
+				text: 'Could not connect to iTunes API. This might be due to',
 				cls: 'subscribe-error-detail'
 			});
 
@@ -470,7 +470,7 @@ export class SubscribePodcastModal extends Modal {
 			});
 
 			reasonsList.createEl('li', { text: 'network connection issues' });
-			reasonsList.createEl('li', { text: 'Obsidian network request restrictions' });
+			reasonsList.createEl('li', { text: 'network request restrictions' });
 			reasonsList.createEl('li', { text: 'iTunes API temporarily unavailable' });
 
 			errorDiv.createEl('p', {

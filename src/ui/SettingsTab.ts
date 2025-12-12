@@ -303,7 +303,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// OPML Export
 		new Setting(containerEl)
-			.setName('Export to OPML')
+			.setName('Export subscriptions')
 			.setDesc('Export your podcast subscriptions to OPML format (compatible with other podcast apps)')
 			.addButton(button => button
 				.setButtonText('Export')
@@ -313,7 +313,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// OPML Import
 		new Setting(containerEl)
-			.setName('Import from OPML')
+			.setName('Import subscriptions')
 			.setDesc('Import podcast subscriptions from an OPML file')
 			.addButton(button => button
 				.setButtonText('Import')
