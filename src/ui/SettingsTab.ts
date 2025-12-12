@@ -179,7 +179,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Daily note folder')
 			.setDesc('Folder where your daily notes are stored (leave empty for vault root)')
 			.addText(text => text
-				.setPlaceholder('daily-notes')
+				.setPlaceholder('Daily notes')
 				.setValue(this.settings.dailyNoteFolderPath)
 				.onChange((value) => {
 					this.settings.dailyNoteFolderPath = value;
@@ -191,7 +191,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Daily note date format')
 			.setDesc('Date format for daily note filenames (uses moment.js format)')
 			.addText(text => text
-				.setPlaceholder('yyyy-mm-dd')
+				.setPlaceholder('Year-month-day')
 				.setValue(this.settings.dailyNoteDateFormat)
 				.onChange((value) => {
 					this.settings.dailyNoteDateFormat = value || 'YYYY-MM-DD';
